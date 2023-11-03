@@ -17,10 +17,11 @@
 #define TECLA_A		0x61
 #define NUM_EVENTOS 6
 
-// Handles para os eventos correspondentes a cada tecla
-HANDLE events[6];		// Ordem dos eventos : [1, 2, m, r, p, a]
-HANDLE event_ESC;		// Para a tecla esc
-/*HANDLE event_dummy;	*/	// TESTE PG - Placeholder para o evento de lista cheia
+// Handles para os eventos
+HANDLE events[6];		
+HANDLE event_ESC;		
+HANDLE event_lista1;	
+HANDLE event_lista2;
 
 // Casting para terceiro e sexto parâmetros da função _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
@@ -50,9 +51,8 @@ int main() {
 	BOOL status;
 	DWORD dwRet;
 
-
 	// --- CRIACAO DOS EVENTOS --- //
-	//Criacao dos eventos de bloqueio
+	//Criacao dos eventos de bloqueio -> ordem = [1, 2, m, r, p, a]
 	for (int i = 0; i < NUM_EVENTOS; ++i) {
 		std::string nomeEvento;
 		nomeEvento = "Evento_" + std::to_string(i);
@@ -78,6 +78,24 @@ int main() {
 	if (!event_ESC)
 		printf("Erro na criacao de do evento ESC! Codigo = %d\n", GetLastError());
 
+	//Criacao dos eventos de lista cheia
+	event_lista1 = CreateEvent(
+		NULL,							// Seguranca (default)
+		FALSE,							// Reset automatico 
+		FALSE,							// Inicia desativado
+		(LPWSTR)"Evento_L1"				// Nome do evento
+	);
+	if (!event_ESC)
+		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
+
+	event_lista2 = CreateEvent(
+		NULL,							// Seguranca (default)
+		FALSE,							// Reset automatico
+		FALSE,							// Inicia desativado
+		(LPWSTR)"Evento_L2"				// Nome do evento
+	);
+	if (!event_ESC)
+		printf("Erro na criacao de do evento lista2! Codigo = %d\n", GetLastError());
 
 	// --- CRIACAO DOS PROCESSOS --- //
 	//Cria processo mensagensCLP
@@ -213,30 +231,23 @@ DWORD WINAPI LeituraTeclado() {
 
 DWORD WINAPI MonitoraListas() {
 
-	Sleep(500);
-	// Abertura do evento de lista cheia criado por outro processo
-	HANDLE event_dummy = OpenEvent(
-		EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
-		FALSE,
-		L"EventoDummy"
-	);
-	if (!event_dummy)
-		printf("Erro na abertura do handle para event_dummy! Codigo = %d\n", GetLastError());
-	//Pra quando tiver o evento de lista cheia
-	HANDLE eventos[2] = { event_ESC, event_dummy};
+	//Pra quando tiver o evento de lista cheia (1 ou 2)
+	HANDLE eventos[3] = { event_ESC, event_lista1, event_lista2};
 	int nTipoEvento = -1;
 	DWORD ret;
 	do {
 		ret = WaitForMultipleObjects(
-			2,					// Espera 2 eventos 
+			3,					// Espera 3 eventos 
 			eventos,			// Array de eventos que espera
 			FALSE,				// Espera o que acontecer primeiro
 			INFINITE			// Espera por tempo indefinido
 		);
 		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 		nTipoEvento = ret - WAIT_OBJECT_0;
-		std::cout << nTipoEvento << std::endl;
-		if (nTipoEvento == 1) {
+		if (nTipoEvento == 2) {
+			printf("Lista 2 cheia \n");
+		}
+		else if (nTipoEvento == 1) {
 			printf("Lista 1 cheia \n");
 		}
 		else if (nTipoEvento == 0) {

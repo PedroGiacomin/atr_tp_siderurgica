@@ -71,17 +71,16 @@ HANDLE hLista1Ocup;
 HANDLE hLista2Ocup;
 HANDLE hMutexCLP;
 
-// Criação de HANDLES para eventos 
-HANDLE event_ESC;
-HANDLE event_M;
+// Criação de HANDLES para eventos  
+HANDLE event_ESC;		// evento de termino
+HANDLE event_M;			// eventos de bloqueio
 HANDLE event_P;
 HANDLE event_R;
 HANDLE event_1;
 HANDLE event_2;
+HANDLE event_lista1;	// eventos de lista cheia
+HANDLE event_lista2;
 
-
-//  TESTE-PG: Handle para um evento teste
-HANDLE event_dummy;
 
 
 int main()
@@ -116,6 +115,14 @@ int main()
 	event_2 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_1");
 	if (!event_2)
 		printf("Erro na abertura do handle para event_2! Codigo = %d\n", GetLastError());
+
+	event_lista1 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_L1");
+	if (!event_lista1)
+		printf("Erro na abertura do handle para event_lista1! Codigo = %d\n", GetLastError());
+
+	event_lista2 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_L2");
+	if (!event_lista2)
+		printf("Erro na abertura do handle para event_lista2! Codigo = %d\n", GetLastError());
 ;
 
 	for (i = 0; i < 2; ++i) {	// cria 2 threads de leitura do CLP
@@ -159,27 +166,13 @@ int main()
 		NULL,
 		0,
 		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necessário
-	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);
-
-	//---  TESTE-PG:  EVENTO DUMMY QUE VAI SER SUBSTITUIDO PELO ENVIO POR MAILSLOT ---//
-	event_dummy = CreateEvent(
-		NULL,							// Seguranca (default)
-		FALSE,							// Reset automatico
-		FALSE,							// Inicia desativado
-		L"EventoDummy"					// Nome do evento
-	);
-	if (!event_dummy)
-		printf("Erro na criacao de do evento dummy! Codigo = %d\n", GetLastError());
-	//---  TESTE-PG: EVENTO DUMMY QUE VAI SER SUBSTITUIDO PELO ENVIO POR MAILSLOT ---//
-	
+	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);	
 
 	// Criação de Mutex e Semaforos
 	hLista1Livre = CreateSemaphore(NULL, 50, 50, L"Lista1Livre");
 	hLista2Livre = CreateSemaphore(NULL, 50, 50, L"Lista2Livre");
 	hLista1Ocup = CreateSemaphore(NULL, 0, 50, L"Lista1Ocup");
 	hLista2Ocup = CreateSemaphore(NULL, 0, 50, L"Lista2Ocup");
-
-
 
 	// Aguarda término das threads
 	dwRet = WaitForMultipleObjects(5, hThreads, TRUE, INFINITE);
@@ -237,7 +230,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			CheckForError(ret);
 			if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedido a lista 
 				printf("Tempo excedido \n");
-				SetEvent(event_dummy); // Informa ao processo de leitura do teclado que a lista1 está cheia
+				SetEvent(event_lista1); // Informa ao processo de leitura do teclado que a lista1 está cheia
 				ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, INFINITE); // A thread fica bloqueada 
 			}
 			else {
