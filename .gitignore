@@ -1,0 +1,9 @@
+Release/
+x64/
+atr_siderurgica.sln
+CheckForError.h
+*/Release/
+*/CheckForError.h
+*/*.vcxproj*
+.vs/
+
