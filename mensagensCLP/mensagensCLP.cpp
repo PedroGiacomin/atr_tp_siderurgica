@@ -26,8 +26,6 @@ DWORD WINAPI RetiraMensagem();
 DWORD WINAPI MonitoraAlarme();
 DWORD WINAPI ExibeDadosProcesso();
 
-
-
 // Variaveis Globais 
 int NSEQ = 0;
 int NSEQAlarme = 0;
@@ -76,7 +74,6 @@ HANDLE hMutexCLP;
 // Criação de HANDLES para eventos 
 HANDLE event_ESC;
 HANDLE event_M;
-HANDLE event_A;
 HANDLE event_P;
 HANDLE event_R;
 HANDLE event_1;
@@ -111,10 +108,6 @@ int main()
 	event_P = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_4");
 	if (!event_P)
 	printf("Erro na abertura do handle para event_P! Codigo = %d\n", GetLastError());
-	
-	event_A = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_5");
-	if (!event_A)
-		printf("Erro na abertura do handle para event_A! Codigo = %d\n", GetLastError());
 
 	event_1 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_0");
 	if (!event_1)
@@ -227,8 +220,8 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
 			produzMensagem(mensagem, i);
-			// Espera a sua vez 
-			ret = WaitForMultipleObjects(3,	hEventoMutexCLP,FALSE,INFINITE);
+			// Espera a sua vez de usar pLivre e NSEQ
+			ret = WaitForMultipleObjects(3,	hEventoMutexCLP, FALSE, INFINITE);
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) { // Ocorreu um comando para bloquear a thread
@@ -238,6 +231,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			else if (nTipoEvento == 1) { // Ocorreu um comando para encerrar o programa
 				printf("Evento de encerramento \n"); break;
 			}
+			
 			// Verifica se existem posições livres na lista1, esperando pelo tempo maximo de 1ms
 			ret = WaitForMultipleObjects(3,	hEventoLista1Livre,FALSE,1);
 			CheckForError(ret);
@@ -260,7 +254,6 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				pLivre1 = (pLivre1 + 1) % 50;
 				ReleaseSemaphore(hLista1Ocup, 1, NULL); // Indica que existem mensagem a ser lida
 				ReleaseMutex(hMutexCLP); // Libera o Mutex para que a outra thread possa utilizar 
-				Sleep(500);
 			}
 		}
 		else { // Se a thread estiver bloqueada ela deve esperar pelo comando de desbloqueio ou pelo encerramento 
@@ -332,7 +325,7 @@ DWORD WINAPI MonitoraAlarme() {
 
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
-	HANDLE hEventoMonitoraAlarme[2] = { event_A, event_ESC};
+	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC};
 	do {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
 			// Define aleatoriamente um intervalo entre 1 a 5 s para disparar o alarme 
@@ -486,6 +479,7 @@ string getTIME() {
 }
 
 void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj, string& tempo, string& temp) {
+	// Retorna o valor na variavel passada no segundo parametro do getline
 	stringstream ss(mensagem);
 	getline(ss, NSEQ, ';');
 	getline(ss, ID, ';');
@@ -504,6 +498,3 @@ string getDIAG(string& mensagem) {
 	getline(ss, diag, ';');
 	return diag;
 }
-
-
-

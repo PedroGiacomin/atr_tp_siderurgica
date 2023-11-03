@@ -36,17 +36,17 @@ int main() {
 		printf("Erro na abertura do handle para event_A! Codigo = %d\n", GetLastError());
 
 	// --- TESTE-PG: PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
-	event_dummy = OpenEvent(
-		EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
-		FALSE,
-		L"EventoDummy"
-	);
-	if (!event_dummy)
-		printf("Erro na abertura do handle para event_dummy! Codigo = %d\n", GetLastError());
+	//event_dummy = OpenEvent(
+	//	EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
+	//	FALSE,
+	//	L"EventoDummy"
+	//);
+	//if (!event_dummy)
+	//	printf("Erro na abertura do handle para event_dummy! Codigo = %d\n", GetLastError());
 	// --- TESTE-PG: PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
 
 	// Trata o recebimento dos eventos
-	HANDLE eventos[3] = { event_A, event_ESC, event_dummy};
+	HANDLE eventos[2] = { event_A, event_ESC};
 	HANDLE eventosBloqueado[2] = { event_A, event_ESC};
 	DWORD ret;
 	int nTipoEvento = 0;
@@ -59,7 +59,7 @@ int main() {
 			// TESTE-PG: ---- PLACEHOLDER PRA ESPERAR RECEBER A MENSAGEM NO MAILSLOT ---- //
 			printf("Thread esperando evento\n");
 			ret = WaitForMultipleObjects(
-				3,			// Espera 3 eventos 
+				2,			// Espera 3 eventos 
 				eventos,	// Array de eventos que espera
 				FALSE,		// Espera o que acontecer primeiro
 				INFINITE	// Espera por tempo indefinido
@@ -74,9 +74,9 @@ int main() {
 			else if (nTipoEvento == 1) {
 				printf("Evento de encerramento \n");
 			}
-			else if (nTipoEvento == 2) {
-				printf("Recebido evento dummy. Vez: %d\n", ++mensagem);
-			}
+			//else if (nTipoEvento == 2) {
+			//	printf("Recebido evento dummy. Vez: %d\n", ++mensagem);
+			//}
 			//  TESTE-PG: ---- PLACEHOLDER PRA ESPERAR RECEBER A MENSAGEM NO MAILSLOT ---- //	
 		}
 		else {  //Estado de bloqueio
