@@ -24,23 +24,23 @@ enum estado {
 	DESBLOQUEADO
 };
 
-// Estrutura das mensagens
-struct msgType {
-	int nSeq;
-	int diag;
-	int id;
-	float presInt;
-	float presInj;
-	float temp;
-	SYSTEMTIME timestamp;
-};
-
-// Estrutura dos alarmes
-struct almType {
-	int nSeq;
-	int id;
-	SYSTEMTIME timestamp;
-};
+//// Estrutura das mensagens
+//struct msgType {
+//	int nSeq;
+//	int diag;
+//	int id;
+//	float presInt;
+//	float presInj;
+//	float temp;
+//	SYSTEMTIME timestamp;
+//};
+//
+//// Estrutura dos alarmes
+//struct almType {
+//	int nSeq;
+//	int id;
+//	SYSTEMTIME timestamp;
+//};
 
 // Variaveis Globais 
 int NSEQ = 0;
@@ -62,24 +62,24 @@ DWORD WINAPI ExibeDadosProcesso();
 
 int setDIAG();		// Define aleatoriamente o valor de DIAG  em um intervalo de 0 a 55
 
-int setNSEQ();		// Define o valor de NSEQ  formatado com 5 digítos 
+string setNSEQ();		// Define o valor de NSEQ  formatado com 5 digítos 
 
-float setPRESS();	// Define aleatoriamente o valor de uma pressão em um intervalo de 100 a 300 com precisão de 1 casa decimal
+string setPRESS();	// Define aleatoriamente o valor de uma pressão em um intervalo de 100 a 300 com precisão de 1 casa decimal
 
-float setTEMP();	// Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisão de 1 casa decimal
+string setTEMP();	// Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisão de 1 casa decimal
 
 int setID();		// Define aleatoriamente um ID de 0 a 99
 
-float getTIME();	// Retorna uma string contento a hora , o minuto e o segundo atual
+string getTIME();	// Retorna uma string contento a hora , o minuto e o segundo atual
 
-void produzMensagem(msgType &mensagem, int ID); // Produz a mensagem de leitura do CLP
+void produzMensagem(string &mensagem, int ID); // Produz a mensagem de leitura do CLP
 
-void produzAlarme(almType& alarme);				// Produz alarme critico do CLP
+void produzAlarme(string &alarme);				// Produz alarme critico do CLP
 
-void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string&DIAG, string& pressInt, string& pressInj,
+void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj,
 	string& tempo, string& temp); // Obtem os parametros de uma mensagem 
 
-string getDIAG(string & mensagem); // Retorna o valor do campo DIAG de uma mensagem
+string getDIAG(string &mensagem); // Retorna o valor do campo DIAG de uma mensagem
 
 // Criação de apontador para Mutexes e Semaforos 
 HANDLE hLista1Livre;
@@ -211,7 +211,7 @@ int main()
 DWORD WINAPI LeituraCLP(LPVOID index)
 {
 	int i = (int)index;
-	msgType mensagem;
+	string mensagem = "";
 	DWORD dwStatus, ret;
 	DWORD nTipoEvento;
 	estado estadoLeitura = DESBLOQUEADO; // Thread começa  desbloqueada
@@ -302,18 +302,20 @@ DWORD WINAPI RetiraMensagem() {
 			else if (nTipoEvento == 1) {
 				printf("Evento de encerramento \n");
 			}
-
-			if (lista1[pOcupado1].diag != 55) { // Adiciona em outra lista circular 
-				WaitForSingleObject(hLista2Livre, INFINITE);
-				lista2[pLivre2] = lista1[pOcupado1];
-				pLivre2 = (pLivre2 + 1) % 50;
-				ReleaseSemaphore(hLista2Ocup, 1, NULL);
+			else if (nTipoEvento == 2) {
+				string DIAG = getDIAG(lista1[pOcupado1]);
+				if (DIAG != "55") { // Adiciona em outra lista circular 
+					WaitForSingleObject(hLista2Livre, INFINITE);
+					lista2[pLivre2] = lista1[pOcupado1];
+					pLivre2 = (pLivre2 + 1) % 50;
+					ReleaseSemaphore(hLista2Ocup, 1, NULL);
+				}
+				else {
+					// pipes ou mailslots 
+				}
+				pOcupado1 = (pOcupado1 + 1) % 50;
+				ReleaseSemaphore(hLista1Livre, 1, NULL);
 			}
-			else { 
-				// pipes ou mailslots 
-			}
-			pOcupado1 = (pOcupado1 + 1) % 50;
-			ReleaseSemaphore(hLista1Livre, 1, NULL);
 		}
 		else {
 			ret = WaitForMultipleObjects(2,	hEventoRetiraMensagemBloqueada,	FALSE, INFINITE	);
@@ -337,7 +339,7 @@ DWORD WINAPI MonitoraAlarme() {
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
 	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC };
-	almType alarme;
+	string alarme;
 
 	do {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
@@ -387,7 +389,7 @@ DWORD WINAPI ExibeDadosProcesso() {
 
 	do {
 		if (estadoExibeDados == DESBLOQUEADO) {
-			//string NSEQ, ID, DIAG, TEMP, PRESS_INJ, PRESS_INT, TEMPO;
+			string NSEQ, ID, DIAG, TEMP, PRESS_INJ, PRESS_INT, TEMPO;
 			ret = WaitForMultipleObjects(3,	hEventoLista2Ocup,	FALSE, INFINITE	);
 			CheckForError(ret);
 
@@ -401,14 +403,11 @@ DWORD WINAPI ExibeDadosProcesso() {
 			}
 			else if (nTipoEvento == 2) {	// Liberou uma posicao na lista 2
 				//Imprime a mensagem
-				cout << lista2[pOcupado2].timestamp << " " 
-					<< " NSEQ: " << NSEQ << " PR INT: " << PRESS_INT << " PR N2: " << PRESS_INJ << " TEMP: " << TEMP << endl;
+				getParametrosMensagemCLP(lista2[pOcupado2], NSEQ, ID, DIAG, PRESS_INT, PRESS_INJ, TEMPO, TEMP);
+				cout << TEMPO << " NSEQ: " << NSEQ << " PR INT: " << PRESS_INT << " PR N2: " << PRESS_INJ << " TEMP: " << TEMP << endl;
+				pOcupado2 = (pOcupado2 + 1) % 50;
+				ReleaseSemaphore(hLista2Livre, 1, NULL);
 			}
-
-			//getParametrosMensagemCLP(lista2[pOcupado2], NSEQ, ID, DIAG, PRESS_INT, PRESS_INJ, TEMPO, TEMP);
-			
-			pOcupado2 = (pOcupado2 + 1) % 50;
-			ReleaseSemaphore(hLista2Livre, 1, NULL);
 		}
 		else {
 			ret = WaitForMultipleObjects(2,	hEventoExibeDadosBloqueado,	FALSE, INFINITE);
@@ -424,50 +423,50 @@ DWORD WINAPI ExibeDadosProcesso() {
 			}
 		}
 
-	} while (1);
+	} while (nTipoEvento != 1);
 	return 0;
 }
 
 // --- FUNCOES AUXILIARES --- //
 // Cria mensagens como struct 
-void produzMensagem(msgType &mensagem, int ID) {
+void produzMensagem(string &mensagem, int ID) {
 
 	// Acessa com exclusividade o NSEQ e o System time
+	stringstream ss;
 	WaitForSingleObject(hMutexCLP, INFINITE);
-	GetSystemTime(&mensagem.timestamp);
-	mensagem.nSeq = NSEQ;
+	string SEQ = setNSEQ();
 	NSEQ++;
+	string tempo = getTIME();
 	ReleaseMutex(hMutexCLP);
 	
-	mensagem.diag = setDIAG();
-	if (mensagem.diag == 55) {		// mensagem de falha
-		mensagem.presInt = 0.0;
-		mensagem.presInj = 0.0;
-		mensagem.temp = 0.0;
-		mensagem.id = ID + 1;
-		//ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << "00000.0" << ";" << "00000.0" << ";" << "00000.0" <<":"<< tempo;
+	int DIAG = setDIAG();
+	if (DIAG == 55) {		// mensagem de falha
+		ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << "00000.0" << ";" << "00000.0" << ";" << "00000.0" <<":"<< tempo;
 	}
 	else {							// mensagem de dados do processo
-		mensagem.presInt = setPRESS();
-		mensagem.presInj = setPRESS();
-		mensagem.temp = setTEMP();
-		mensagem.id = ID + 1;
-		//ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
+		string PRESS_INT = setPRESS();
+		string PRESS_INJ = setPRESS();
+		string TEMP = setTEMP();
+		ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
 	}
-	//mensagem = ss.str();
+
+	mensagem = ss.str();
 }
 
 // Cria alarmes como struct 
-void produzAlarme(msgType& alarme, int ID) {
+void produzAlarme(string& alarme) {
 
-	// Acessa com exclusividade o NSEQ e o system time
+	// Acessa com exclusividade o NSEQ e o System time
+	stringstream ss;
 	WaitForSingleObject(hMutexCLP, INFINITE);
-	GetSystemTime(&alarme.timestamp);
-	alarme.nSeq = NSEQ;
+	string SEQ = setNSEQ();
 	NSEQ++;
+	string tempo = getTIME();
 	ReleaseMutex(hMutexCLP);
-	
-	alarme.id = setID();
+	int ID = setID();
+
+	ss << SEQ << ";" << ID << ";" << tempo;
+	alarme = ss.str();
 }
 
 int setDIAG() {
@@ -476,32 +475,32 @@ int setDIAG() {
 	else return resultado;
 }
 
-//string setNSEQ() {
-//	ostringstream ss;
-//	ss << std::setfill('0') << std::setw(5) << NSEQ;
-//	string numeroFormatado = ss.str(); // Salvar o valor formatado em uma variável
-//	return numeroFormatado;
-//}
+string setNSEQ() {
+	ostringstream ss;
+	ss << std::setfill('0') << std::setw(5) << NSEQ;
+	string numeroFormatado = ss.str(); // Salvar o valor formatado em uma variável
+	return numeroFormatado;
+}
 
-float setPRESS() {
+string setPRESS() {
 	int numSorteado = rand() % 2001 + 1000;
 	if (numSorteado % 10 == 0) numSorteado++;
 	float num = numSorteado / 10.0;
-	//ostringstream ss;
-	//ss << "0" << num;
-	//string numeroFormatado = ss.str();
-	return num;
+	ostringstream ss;
+	ss << "0" << num;
+	string numeroFormatado = ss.str();
+	return numeroFormatado;
 
 }
 
-float setTEMP() {
+string setTEMP() {
 	int numSorteado = rand() % 10001 + 10000;
 	if (numSorteado % 10 == 0) numSorteado++;
 	float num = numSorteado / 10;
-	//ostringstream ss;
-	//ss << num;
-	//string numeroFormatado = ss.str();
-	return num;
+	ostringstream ss;
+	ss << num;
+	string numeroFormatado = ss.str();
+	return numeroFormatado;
 }
 
 // Para o ID do alarme
@@ -510,14 +509,14 @@ int setID() {
 	return numSorteado;
 }
 
-//string getTIME() {
-//	SYSTEMTIME tempo;
-//	GetSystemTime(&tempo);
-//	ostringstream ss;
-//	ss << tempo.wHour << ":" << tempo.wMinute << ":" << tempo.wSecond;
-//	string temp = ss.str();
-//	return temp;
-//}
+string getTIME() {
+	SYSTEMTIME tempo;
+	GetSystemTime(&tempo);
+	ostringstream ss;
+	ss << tempo.wHour << ":" << tempo.wMinute << ":" << tempo.wSecond;
+	string temp = ss.str();
+	return temp;
+}
 
 void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj, string& tempo, string& temp) {
 	// Retorna o valor na variavel passada no segundo parametro do getline
@@ -529,16 +528,6 @@ void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string
 	getline(ss, pressInj, ';');
 	getline(ss, temp, ';');
 	getline(ss, tempo, ';');
-}
-
-string msg2string(msgType& mensagem){
-	ostringstream ssNSEQ;
-	ssNSEQ << std::setfill('0') << std::setw(5) << mensagem.nSeq;
-
-	stringstream ss;
-	ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
-	ss << mensagem.timestamp.wHour << ":" << mensagem.timestamp.wMinute << ":" << mensagem.timestamp.wSecond << ":"
-		<< " NSEQ: " << 42 << " PR INT: " << mensagem.presInt << " PR N2: " << mensagem.presInt
 }
 
 string getDIAG(string& mensagem) {
