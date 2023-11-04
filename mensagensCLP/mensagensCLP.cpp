@@ -1,4 +1,3 @@
-
 #define WIN32_LEAN_AND_MEAN 
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
 
@@ -15,16 +14,33 @@
 
 using namespace std;
 
-
 // Casting para terceiro e sexto parâmetros da função _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
 typedef unsigned* CAST_LPDWORD;
 
-// Declaração das funcões executadas pelas threads
-DWORD WINAPI LeituraCLP(LPVOID index);
-DWORD WINAPI RetiraMensagem();
-DWORD WINAPI MonitoraAlarme();
-DWORD WINAPI ExibeDadosProcesso();
+// Criação de tipos para indicar o estado da thread
+enum estado {
+	BLOQUEADO,
+	DESBLOQUEADO
+};
+
+// Estrutura das mensagens
+struct msgType {
+	int nSeq;
+	int diag;
+	int id;
+	float presInt;
+	float presInj;
+	float temp;
+	SYSTEMTIME timestamp;
+};
+
+// Estrutura dos alarmes
+struct almType {
+	int nSeq;
+	int id;
+	SYSTEMTIME timestamp;
+};
 
 // Variaveis Globais 
 int NSEQ = 0;
@@ -33,36 +49,37 @@ int pLivre1 = 0;
 int pLivre2 = 0;
 int pOcupado1 = 0;
 int pOcupado2 = 0;
-string lista1[50]; 
+string lista1[50];
 string lista2[50];
 
-// Declaração funções auxiliares
+// Declaração das funcões executadas pelas threads
+DWORD WINAPI LeituraCLP(LPVOID index);
+DWORD WINAPI RetiraMensagem();
+DWORD WINAPI MonitoraAlarme();
+DWORD WINAPI ExibeDadosProcesso();
 
-int setDIAG();  // Define aleatoriamente o valor de DIAG  em um intervalo de 0 a 55
+// Declaração funções auxiliares da mensagem
 
-string setNSEQ(); // Define o valor de NSEQ  formatado com 5 digítos 
+int setDIAG();		// Define aleatoriamente o valor de DIAG  em um intervalo de 0 a 55
 
-string setPRESS();  // Define aleatoriamente o valor de uma pressão em um intervalo de 100 a 300 com precisão de 1 casa decimal
+int setNSEQ();		// Define o valor de NSEQ  formatado com 5 digítos 
 
-string setTEMP(); // Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisão de 1 casa decimal
+float setPRESS();	// Define aleatoriamente o valor de uma pressão em um intervalo de 100 a 300 com precisão de 1 casa decimal
 
-int setID(); //  Define aleatoriamente um ID de 0 a 99
+float setTEMP();	// Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisão de 1 casa decimal
 
-string getTIME(); // Retorna uma string contento a hora , o minuto e o segundo atual
+int setID();		// Define aleatoriamente um ID de 0 a 99
 
-void produzMensagem(string &mensagem, int ID); // Produz a mensagem de leitura do CLP
+float getTIME();	// Retorna uma string contento a hora , o minuto e o segundo atual
+
+void produzMensagem(msgType &mensagem, int ID); // Produz a mensagem de leitura do CLP
+
+void produzAlarme(almType& alarme);				// Produz alarme critico do CLP
 
 void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string&DIAG, string& pressInt, string& pressInj,
 	string& tempo, string& temp); // Obtem os parametros de uma mensagem 
 
 string getDIAG(string & mensagem); // Retorna o valor do campo DIAG de uma mensagem
-
-
-// Criação de tipos para indicar o estado da thread
-enum estado {
-	BLOQUEADO,
-	DESBLOQUEADO
-};
 
 // Criação de apontador para Mutexes e Semaforos 
 HANDLE hLista1Livre;
@@ -81,8 +98,6 @@ HANDLE event_2;
 HANDLE event_lista1;	// eventos de lista cheia
 HANDLE event_lista2;
 
-
-
 int main()
 {
 	HANDLE hThreads[5];
@@ -98,15 +113,15 @@ int main()
 
 	event_M = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_2");
 	if (!event_M)
-	printf("Erro na abertura do handle para event_M Codigo = %d\n", GetLastError());
+		printf("Erro na abertura do handle para event_M Codigo = %d\n", GetLastError());
 	
 	event_R = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_3");
 	if (!event_R)
-	printf("Erro na abertura do handle para event_R! Codigo = %d\n", GetLastError());
+		printf("Erro na abertura do handle para event_R! Codigo = %d\n", GetLastError());
 	
 	event_P = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_4");
 	if (!event_P)
-	printf("Erro na abertura do handle para event_P! Codigo = %d\n", GetLastError());
+		printf("Erro na abertura do handle para event_P! Codigo = %d\n", GetLastError());
 
 	event_1 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_0");
 	if (!event_1)
@@ -192,16 +207,16 @@ int main()
 	return EXIT_SUCCESS;
 }	// main
 
+// --- LOGICA DAS THREADS --- //
 DWORD WINAPI LeituraCLP(LPVOID index)
 {
-	
 	int i = (int)index;
-	string mensagem = "";
+	msgType mensagem;
 	DWORD dwStatus, ret;
 	DWORD nTipoEvento;
 	estado estadoLeitura = DESBLOQUEADO; // Thread começa  desbloqueada
 
-	hMutexCLP = CreateMutex(NULL, FALSE, NULL);
+	hMutexCLP = CreateMutex(NULL, FALSE, NULL); // PEDRO - Talvez seja melhor criar la em cima
 
 	// Cria vetores de eventos
 	HANDLE event_CLP[2] = { event_1, event_2 };
@@ -213,16 +228,17 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
 			produzMensagem(mensagem, i);
-			// Espera a sua vez de usar pLivre e NSEQ
+
+			// Espera a sua vez de usar pLivre	
 			ret = WaitForMultipleObjects(3,	hEventoMutexCLP, FALSE, INFINITE);
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) { // Ocorreu um comando para bloquear a thread
+			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
 				printf("Evento de bloqueio \n");
-				estadoLeitura = BLOQUEADO; continue;
+				estadoLeitura = BLOQUEADO; 
 			}
-			else if (nTipoEvento == 1) { // Ocorreu um comando para encerrar o programa
-				printf("Evento de encerramento \n"); break;
+			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+				printf("Evento de encerramento \n"); 
 			}
 			
 			// Verifica se existem posições livres na lista1, esperando pelo tempo maximo de 1ms
@@ -233,36 +249,37 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				SetEvent(event_lista1); // Informa ao processo de leitura do teclado que a lista1 está cheia
 				ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, INFINITE); // A thread fica bloqueada 
 			}
-			else {
-				nTipoEvento = ret - WAIT_OBJECT_0;
-				if (nTipoEvento == 0) { // Ocorreu um comando para bloquear a thread
-					printf("Evento de bloqueio \n");
-					estadoLeitura = BLOQUEADO; continue;
-				}
-				else if (nTipoEvento == 1) { // Ocorreu um comando para encerrar o programa
-					printf("Evento de encerramento \n"); break;
-				}
-				// A mensagem é colocada na lista na posição livre
-				lista1[pLivre1] = mensagem;
-				pLivre1 = (pLivre1 + 1) % 50;
-				ReleaseSemaphore(hLista1Ocup, 1, NULL); // Indica que existem mensagem a ser lida
-				ReleaseMutex(hMutexCLP); // Libera o Mutex para que a outra thread possa utilizar 
+			
+			nTipoEvento = ret - WAIT_OBJECT_0;
+			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
+				printf("Evento de bloqueio \n");
+				estadoLeitura = BLOQUEADO; 
 			}
+			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+				printf("Evento de encerramento \n"); 
+			}
+			else if (nTipoEvento == 2) {	// Foi liberada uma posicao da lista	
+				lista1[pLivre1] = mensagem;			// A mensagem é colocada na lista na posição livre
+				pLivre1 = (pLivre1 + 1) % 50;
+				ReleaseSemaphore(hLista1Ocup, 1, NULL);		// Indica que existem mensagem a ser lida
+			}
+			ReleaseMutex(hMutexCLP); // Libera o Mutex para que a outra thread possa utilizar 	
 		}
+
 		else { // Se a thread estiver bloqueada ela deve esperar pelo comando de desbloqueio ou pelo encerramento 
 			ret = WaitForMultipleObjects(2,	hEventoCLPBloqueado,FALSE,INFINITE);
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				printf("Evento de desbloqueio \n");
-				estadoLeitura = DESBLOQUEADO; continue;
+				estadoLeitura = DESBLOQUEADO; 
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
+				printf("Evento de encerramento \n"); 
 			}
-		} 
+		}
 		Sleep(500);
-	} while (1);
+	} while (nTipoEvento != 1);
 	return 0;
 }
 
@@ -272,6 +289,7 @@ DWORD WINAPI RetiraMensagem() {
 	estado estadoRetiraMensagem = DESBLOQUEADO;
 	HANDLE hEventoLista1Ocup[3] = { event_R, event_ESC, hLista1Ocup };
 	HANDLE hEventoRetiraMensagemBloqueada[2] = { event_R, event_ESC};
+	
 	do {
 		if (estadoRetiraMensagem == DESBLOQUEADO) {
 			ret = WaitForMultipleObjects(3, hEventoLista1Ocup,FALSE,INFINITE);
@@ -279,20 +297,20 @@ DWORD WINAPI RetiraMensagem() {
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				printf("Evento de bloqueio \n");
-				estadoRetiraMensagem = BLOQUEADO; continue;
+				estadoRetiraMensagem = BLOQUEADO;
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
+				printf("Evento de encerramento \n");
 			}
-			string DIAG = getDIAG(lista1[pOcupado1]);
 
-			if (DIAG != "55") { // Adiciona em outra lista circular 
+			if (lista1[pOcupado1].diag != 55) { // Adiciona em outra lista circular 
 				WaitForSingleObject(hLista2Livre, INFINITE);
 				lista2[pLivre2] = lista1[pOcupado1];
 				pLivre2 = (pLivre2 + 1) % 50;
 				ReleaseSemaphore(hLista2Ocup, 1, NULL);
 			}
-			else { // pipes ou mailslots 
+			else { 
+				// pipes ou mailslots 
 			}
 			pOcupado1 = (pOcupado1 + 1) % 50;
 			ReleaseSemaphore(hLista1Livre, 1, NULL);
@@ -303,61 +321,61 @@ DWORD WINAPI RetiraMensagem() {
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				printf("Evento de desbloqueio \n");
-				estadoRetiraMensagem = DESBLOQUEADO; continue;
+				estadoRetiraMensagem = DESBLOQUEADO; 
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
+				printf("Evento de encerramento \n");
 			}
 		}
 
-	} while (1);
+	} while (nTipoEvento != 1);
+
 	return 0;
 }
 
 DWORD WINAPI MonitoraAlarme() {
-
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
-	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC};
+	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC };
+	almType alarme;
+
 	do {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
 			// Define aleatoriamente um intervalo entre 1 a 5 s para disparar o alarme 
 			int tempoDormindo = rand() % 4001 + 1000;
 			// Espera pelo o encerramento do programa ou pelo bloqueio enquanto o alarme não é disparado
-			ret = WaitForMultipleObjects(2,	hEventoMonitoraAlarme,FALSE,tempoDormindo);
+			ret = WaitForMultipleObjects(2,	hEventoMonitoraAlarme, FALSE, tempoDormindo);
 			CheckForError(ret);
-			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) {
-				printf("Evento de bloqueio \n");
-				estadoMonitoraAlarme = BLOQUEADO; continue;
-			}
-			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
-			}
-			stringstream ss;
-			string tempo = getTIME();
-			int ID = setID();
-			// Produz a mensagem de alarme 
-			ss << setfill('0') << setw(5) << NSEQ << ";" << setfill('0') << setw(2) << ID << ";" << tempo;
-			string mensagemAlarme = ss.str();
 
-			// ---  TESTE-PG: PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
-			//PulseEvent(event_dummy);
-			// ---  TESTE-PG:  PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
+			if (ret == WAIT_TIMEOUT) {	// Quando exceder o tempo lanca o alarme
+				produzAlarme(alarme);
+				//envia por mailslot para o processo exibir alarme
+			}
+			else {						// Mas se antes disso receber um comando do teclado
+				nTipoEvento = ret - WAIT_OBJECT_0;
+				if (nTipoEvento == 0) {
+					printf("Evento de bloqueio \n");
+					estadoMonitoraAlarme = BLOQUEADO;
+				}
+				else if (nTipoEvento == 1) {
+					printf("Evento de encerramento \n");
+				}
+			}
 		}
+
 		else {
 			ret = WaitForMultipleObjects(2,hEventoMonitoraAlarme,FALSE,	INFINITE);
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				printf("Evento de desbloqueio \n");
-				estadoMonitoraAlarme = DESBLOQUEADO; continue;
+				estadoMonitoraAlarme = DESBLOQUEADO;
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
+				printf("Evento de encerramento \n");
 			}
 		}
-	} while (1);
+	} while(nTipoEvento != 1);
 	return 0;
 }
 
@@ -365,28 +383,37 @@ DWORD WINAPI ExibeDadosProcesso() {
 	estado estadoExibeDados = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
 	HANDLE hEventoLista2Ocup[3] = { event_P, event_ESC, hLista2Ocup };
-	HANDLE hEventoExibeDadosBloqueado[2] = { event_P, event_ESC};
+	HANDLE hEventoExibeDadosBloqueado[2] = { event_P, event_ESC };
 
 	do {
 		if (estadoExibeDados == DESBLOQUEADO) {
-			string NSEQ, ID, DIAG, TEMP, PRESS_INJ, PRESS_INT, TEMPO;
+			//string NSEQ, ID, DIAG, TEMP, PRESS_INJ, PRESS_INT, TEMPO;
 			ret = WaitForMultipleObjects(3,	hEventoLista2Ocup,	FALSE, INFINITE	);
+			CheckForError(ret);
+
 			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) {
+			if (nTipoEvento == 0) {			// Recebeu comando de bloqueio
 				printf("Evento de bloqueio \n");
-				estadoExibeDados = BLOQUEADO; continue;
+				estadoExibeDados = BLOQUEADO;
+			}	
+			else if (nTipoEvento == 1) {	// Recebeu comando de encerramento
+				printf("Evento de encerramento \n");
 			}
-			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n"); break;
+			else if (nTipoEvento == 2) {	// Liberou uma posicao na lista 2
+				//Imprime a mensagem
+				cout << lista2[pOcupado2].timestamp << " " 
+					<< " NSEQ: " << NSEQ << " PR INT: " << PRESS_INT << " PR N2: " << PRESS_INJ << " TEMP: " << TEMP << endl;
 			}
-			getParametrosMensagemCLP(lista2[pOcupado2], NSEQ, ID, DIAG, PRESS_INT, PRESS_INJ, TEMPO, TEMP);
-			cout << TEMPO << " NSEQ: " << NSEQ << " PR INT: " << PRESS_INT << " PR N2: " << PRESS_INJ << " TEMP: " << TEMP << endl;
+
+			//getParametrosMensagemCLP(lista2[pOcupado2], NSEQ, ID, DIAG, PRESS_INT, PRESS_INJ, TEMPO, TEMP);
+			
 			pOcupado2 = (pOcupado2 + 1) % 50;
 			ReleaseSemaphore(hLista2Livre, 1, NULL);
 		}
 		else {
 			ret = WaitForMultipleObjects(2,	hEventoExibeDadosBloqueado,	FALSE, INFINITE);
 			CheckForError(ret);
+
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				printf("Evento de desbloqueio \n");
@@ -401,26 +428,46 @@ DWORD WINAPI ExibeDadosProcesso() {
 	return 0;
 }
 
-// Implementação das funções auxiliares
-void produzMensagem(string& mensagem, int ID) {
-	int DIAG = setDIAG();
-	WaitForSingleObject(hMutexCLP, INFINITE);
-	string SEQ = setNSEQ();
-	string tempo = getTIME();
-	stringstream ss;
-	if (DIAG == 55) {
-		ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << "00000.0" << ";" << "00000.0" << ";" << "00000.0" <<":"<< tempo;
-	}
-	else {
-		string PRESS_INT = setPRESS();
-		string PRESS_INJ = setPRESS();
-		string TEMP = setTEMP();
-		ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
+// --- FUNCOES AUXILIARES --- //
+// Cria mensagens como struct 
+void produzMensagem(msgType &mensagem, int ID) {
 
-	}
+	// Acessa com exclusividade o NSEQ e o System time
+	WaitForSingleObject(hMutexCLP, INFINITE);
+	GetSystemTime(&mensagem.timestamp);
+	mensagem.nSeq = NSEQ;
 	NSEQ++;
 	ReleaseMutex(hMutexCLP);
-	mensagem = ss.str();
+	
+	mensagem.diag = setDIAG();
+	if (mensagem.diag == 55) {		// mensagem de falha
+		mensagem.presInt = 0.0;
+		mensagem.presInj = 0.0;
+		mensagem.temp = 0.0;
+		mensagem.id = ID + 1;
+		//ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << "00000.0" << ";" << "00000.0" << ";" << "00000.0" <<":"<< tempo;
+	}
+	else {							// mensagem de dados do processo
+		mensagem.presInt = setPRESS();
+		mensagem.presInj = setPRESS();
+		mensagem.temp = setTEMP();
+		mensagem.id = ID + 1;
+		//ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
+	}
+	//mensagem = ss.str();
+}
+
+// Cria alarmes como struct 
+void produzAlarme(msgType& alarme, int ID) {
+
+	// Acessa com exclusividade o NSEQ e o system time
+	WaitForSingleObject(hMutexCLP, INFINITE);
+	GetSystemTime(&alarme.timestamp);
+	alarme.nSeq = NSEQ;
+	NSEQ++;
+	ReleaseMutex(hMutexCLP);
+	
+	alarme.id = setID();
 }
 
 int setDIAG() {
@@ -429,47 +476,48 @@ int setDIAG() {
 	else return resultado;
 }
 
-string setNSEQ() {
-	ostringstream ss;
-	ss << std::setfill('0') << std::setw(5) << NSEQ;
-	string numeroFormatado = ss.str(); // Salvar o valor formatado em uma variável
-	return numeroFormatado;
-}
+//string setNSEQ() {
+//	ostringstream ss;
+//	ss << std::setfill('0') << std::setw(5) << NSEQ;
+//	string numeroFormatado = ss.str(); // Salvar o valor formatado em uma variável
+//	return numeroFormatado;
+//}
 
-string setPRESS() {
+float setPRESS() {
 	int numSorteado = rand() % 2001 + 1000;
 	if (numSorteado % 10 == 0) numSorteado++;
-	double num = numSorteado / 10.0;
-	ostringstream ss;
-	ss << "0" << num;
-	string numeroFormatado = ss.str();
-	return numeroFormatado;
+	float num = numSorteado / 10.0;
+	//ostringstream ss;
+	//ss << "0" << num;
+	//string numeroFormatado = ss.str();
+	return num;
 
 }
 
-string setTEMP() {
+float setTEMP() {
 	int numSorteado = rand() % 10001 + 10000;
 	if (numSorteado % 10 == 0) numSorteado++;
-	double num = numSorteado / 10;
-	ostringstream ss;
-	ss << num;
-	string numeroFormatado = ss.str();
-	return numeroFormatado;
+	float num = numSorteado / 10;
+	//ostringstream ss;
+	//ss << num;
+	//string numeroFormatado = ss.str();
+	return num;
 }
 
+// Para o ID do alarme
 int setID() {
 	int numSorteado = rand() % 99;
 	return numSorteado;
 }
 
-string getTIME() {
-	SYSTEMTIME tempo;
-	GetSystemTime(&tempo);
-	ostringstream ss;
-	ss << tempo.wHour << ":" << tempo.wMinute << ":" << tempo.wSecond;
-	string temp = ss.str();
-	return temp;
-}
+//string getTIME() {
+//	SYSTEMTIME tempo;
+//	GetSystemTime(&tempo);
+//	ostringstream ss;
+//	ss << tempo.wHour << ":" << tempo.wMinute << ":" << tempo.wSecond;
+//	string temp = ss.str();
+//	return temp;
+//}
 
 void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj, string& tempo, string& temp) {
 	// Retorna o valor na variavel passada no segundo parametro do getline
@@ -481,6 +529,16 @@ void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string
 	getline(ss, pressInj, ';');
 	getline(ss, temp, ';');
 	getline(ss, tempo, ';');
+}
+
+string msg2string(msgType& mensagem){
+	ostringstream ssNSEQ;
+	ssNSEQ << std::setfill('0') << std::setw(5) << mensagem.nSeq;
+
+	stringstream ss;
+	ss << SEQ << ";" << ID + 1 << ";" << DIAG << ";" << PRESS_INT << ";" << PRESS_INJ << ";" << TEMP << ";" << tempo;
+	ss << mensagem.timestamp.wHour << ":" << mensagem.timestamp.wMinute << ":" << mensagem.timestamp.wSecond << ":"
+		<< " NSEQ: " << 42 << " PR INT: " << mensagem.presInt << " PR N2: " << mensagem.presInt
 }
 
 string getDIAG(string& mensagem) {

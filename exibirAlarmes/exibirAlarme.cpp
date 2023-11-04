@@ -35,16 +35,6 @@ int main() {
 	if (!event_A)
 		printf("Erro na abertura do handle para event_A! Codigo = %d\n", GetLastError());
 
-	// --- TESTE-PG: PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
-	//event_dummy = OpenEvent(
-	//	EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
-	//	FALSE,
-	//	L"EventoDummy"
-	//);
-	//if (!event_dummy)
-	//	printf("Erro na abertura do handle para event_dummy! Codigo = %d\n", GetLastError());
-	// --- TESTE-PG: PLACEHOLDER PARA O ENVIO DA MENSAGEM POR MAILSLOTS ---// 
-
 	// Trata o recebimento dos eventos
 	HANDLE eventos[2] = { event_A, event_ESC};
 	HANDLE eventosBloqueado[2] = { event_A, event_ESC};
