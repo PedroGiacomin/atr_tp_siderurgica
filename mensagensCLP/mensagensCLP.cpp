@@ -36,15 +36,14 @@ struct msgType {
 };
 
 //// Estrutura dos alarmes
-//struct almType {
-//	int nSeq;
-//	int id;
-//	SYSTEMTIME timestamp;
-//};
+struct almType {
+	int nSeq;
+	int id;
+	SYSTEMTIME timestamp;
+};
 
 // Variaveis Globais 
 int NSEQ = 0;
-int NSEQAlarme = 0;
 int pLivre1 = 0;
 int pLivre2 = 0;
 int pOcupado1 = 0;
@@ -74,7 +73,7 @@ string getTIME(SYSTEMTIME tempo);	// Retorna uma string contento a hora , o minu
 
 void produzMensagem(msgType &mensagem, int ID, int NSEQ_aux); // Produz a mensagem de leitura do CLP
 
-void produzAlarme(string &alarme);				// Produz alarme critico do CLP
+void produzAlarme(almType &alarme, int NSEQ_aux);				// Produz alarme critico do CLP
 
 //void getParametrosMensagemCLP(string& mensagem, string& NSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj,
 //	string& tempo, string& temp); // Obtem os parametros de uma mensagem 
@@ -249,10 +248,10 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				NSEQ_aux = NSEQ;
 				if (NSEQ != 99999) NSEQ++;
 				else NSEQ = 0; 
+				ReleaseMutex(hMutexNSEQ);
 			}
-			ReleaseMutex(hMutexNSEQ); 
 			
-			// Uma concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
+			// Uma vez concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
 			produzMensagem(mensagem, i + 1, NSEQ_aux);
 			
 			// Verifica se existem posições livres na lista1, esperando pelo tempo maximo de 1ms
@@ -339,8 +338,14 @@ DWORD WINAPI RetiraMensagem() {
 					ReleaseSemaphore(hLista2Ocup, 1, NULL);			// Sinaliza que tem mensagens a serem lidas na lista 2
 				}
 				else {
-					// pipes ou mailslots 
-					
+					// pipes ou mailslots (printando como teste)
+					cout << getTIME(mensagem.timestamp) <<
+						" NSEQ: " << std::setw(5) << std::setfill('0') << mensagem.nSeq <<
+						" ID: " << mensagem.id <<
+						" PR INT: " << mensagem.presInt <<
+						" PR N2: " << mensagem.presInj <<
+						" TEMP: " << mensagem.temp <<
+						" !!! FALHA !!! " << endl;
 				}
 				pOcupado1 = (pOcupado1 + 1) % 100;
 				ReleaseSemaphore(hLista1Livre, 1, NULL);
@@ -367,33 +372,41 @@ DWORD WINAPI RetiraMensagem() {
 DWORD WINAPI MonitoraAlarme() {
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
-	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC };
-	string alarme;
+	HANDLE hEventoMonitoraAlarme[3] = { event_M, event_ESC, hMutexNSEQ};
+	int NSEQ_aux;
+	almType alarme;
+
+	// Define aleatoriamente um intervalo entre 1 a 5 s para disparar o alarme 
+	int tempoDormindo = rand() % 4001 + 1000;
 
 	do {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
-			// Define aleatoriamente um intervalo entre 1 a 5 s para disparar o alarme 
-			int tempoDormindo = rand() % 4001 + 1000;
-			// Espera pelo o encerramento do programa ou pelo bloqueio enquanto o alarme não é disparado
-			ret = WaitForMultipleObjects(2,	hEventoMonitoraAlarme, FALSE, tempoDormindo);
+			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo mutex do NSEQ
+			ret = WaitForMultipleObjects(3,	hEventoMonitoraAlarme, FALSE, INFINITE);
 			CheckForError(ret);
 
-			if (ret == WAIT_TIMEOUT) {	// Quando exceder o tempo lanca o alarme
-				//produzAlarme(alarme);
-				//envia por mailslot para o processo exibir alarme
+			nTipoEvento = ret - WAIT_OBJECT_0;
+			if (nTipoEvento == 0) {			// Bloqueio
+				printf("Evento de bloqueio \n");
+				estadoMonitoraAlarme = BLOQUEADO;
 			}
-			else {						// Mas se antes disso receber um comando do teclado
-				nTipoEvento = ret - WAIT_OBJECT_0;
-				if (nTipoEvento == 0) {
-					printf("Evento de bloqueio \n");
-					estadoMonitoraAlarme = BLOQUEADO;
-				}
-				else if (nTipoEvento == 1) {
-					printf("Evento de encerramento \n");
-				}
+			else if (nTipoEvento == 1) {	// Encerramento
+				printf("Evento de encerramento \n");
+			}
+			else if (nTipoEvento == 2) {	// Mutex
+				NSEQ_aux = NSEQ;
+				if (NSEQ != 99999) NSEQ++;	
+				else NSEQ = 0;
+				ReleaseMutex(hMutexNSEQ);
+				produzAlarme(alarme, NSEQ_aux);
+
+				// envia por mailslot (printando como teste)
+				cout << getTIME(alarme.timestamp) <<
+					" NSEQ: "	<< std::setw(5) << std::setfill('0') << alarme.nSeq <<
+					" ID: "		<< alarme.id	<< 
+					" !!!!!!! ALARME !!!!!!! "	<< endl;
 			}
 		}
-
 		else {
 			ret = WaitForMultipleObjects(2,hEventoMonitoraAlarme,FALSE,	INFINITE);
 			CheckForError(ret);
@@ -406,6 +419,7 @@ DWORD WINAPI MonitoraAlarme() {
 				printf("Evento de encerramento \n");
 			}
 		}
+		Sleep(tempoDormindo);
 	} while(nTipoEvento != 1);
 	return 0;
 }
@@ -483,27 +497,19 @@ void produzMensagem(msgType &mensagem, int ID, int NSEQ_aux) {
 }
 
 // Cria alarmes como struct 
-//void produzAlarme(string& alarme) {
-//
-//	// Acessa com exclusividade o NSEQ e o System time
-//	stringstream ss;
-//	WaitForSingleObject(hMutexNSEQ, INFINITE);
-//	//string SEQ = setNSEQ();
-//	NSEQ++;
-//	//string tempo = getTIME();
-//	ReleaseMutex(hMutexNSEQ);
-//	int ID = setID();
-//
-//	//ss << SEQ << ";" << ID << ";" << tempo;
-//	alarme = ss.str();
-//	
-//}
+void produzAlarme (almType& alarme, int NSEQ_aux) {
+	GetSystemTime(&alarme.timestamp);
+	alarme.nSeq = NSEQ_aux;
+	alarme.id = setID();
+}
 
 
 int setDIAG() {
 	int resultado = rand() % 70;
-	if (resultado >= 55) return 55;
-	else return resultado;
+	if (resultado >= 55) 
+		return 55;
+	else 
+		return resultado;
 }
 
 //string setNSEQ(int NSEQ_aux) {
@@ -544,23 +550,23 @@ string getTIME(SYSTEMTIME tempo) {
 	return temp;
 }
 
-void getParametrosMensagemCLP(string& mensagem, string& nSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj, string& tempo, string& temp) {
-	// Retorna o valor na variavel passada no segundo parametro do getline
-	stringstream ss(mensagem);
-	getline(ss, nSEQ, ';');
-	getline(ss, ID, ';');
-	getline(ss, DIAG, ';');
-	getline(ss, pressInt, ';');
-	getline(ss, pressInj, ';');
-	getline(ss, temp, ';');
-	getline(ss, tempo, ';');
-}
-
-string getDIAG(string& mensagem) {
-	string auxiliar, diag;
-	stringstream ss(mensagem);
-	getline(ss, auxiliar, ';');
-	getline(ss, auxiliar, ';');
-	getline(ss, diag, ';');
-	return diag;
-}
+//void getParametrosMensagemCLP(string& mensagem, string& nSEQ, string& ID, string& DIAG, string& pressInt, string& pressInj, string& tempo, string& temp) {
+//	// Retorna o valor na variavel passada no segundo parametro do getline
+//	stringstream ss(mensagem);
+//	getline(ss, nSEQ, ';');
+//	getline(ss, ID, ';');
+//	getline(ss, DIAG, ';');
+//	getline(ss, pressInt, ';');
+//	getline(ss, pressInj, ';');
+//	getline(ss, temp, ';');
+//	getline(ss, tempo, ';');
+//}
+//
+//string getDIAG(string& mensagem) {
+//	string auxiliar, diag;
+//	stringstream ss(mensagem);
+//	getline(ss, auxiliar, ';');
+//	getline(ss, auxiliar, ';');
+//	getline(ss, diag, ';');
+//	return diag;
+//}
