@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN 
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
+#define _CRT_RAND_S
 
 #include <windows.h>
 #include <stdio.h>
@@ -192,8 +193,6 @@ int main()
 		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necessário
 	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);	
 
-
-
 	// Aguarda término das threads
 	dwRet = WaitForMultipleObjects(5, hThreads, TRUE, INFINITE);
 	CheckForError(dwRet == WAIT_OBJECT_0);
@@ -317,7 +316,7 @@ DWORD WINAPI RetiraMensagem() {
 	
 	do {
 		if (estadoRetiraMensagem == DESBLOQUEADO) {
-			ret = WaitForMultipleObjects(3, hEventoLista1Ocup,FALSE,INFINITE);
+			ret = WaitForMultipleObjects(3, hEventoLista1Ocup, FALSE, INFINITE);
 			CheckForError(ret);
 			
 			nTipoEvento = ret - WAIT_OBJECT_0;
@@ -339,13 +338,13 @@ DWORD WINAPI RetiraMensagem() {
 				}
 				else {
 					// pipes ou mailslots (printando como teste)
-					cout << getTIME(mensagem.timestamp) <<
+					/*cout << getTIME(mensagem.timestamp) <<
 						" NSEQ: " << std::setw(5) << std::setfill('0') << mensagem.nSeq <<
 						" ID: " << mensagem.id <<
 						" PR INT: " << mensagem.presInt <<
 						" PR N2: " << mensagem.presInj <<
 						" TEMP: " << mensagem.temp <<
-						" !!! FALHA !!! " << endl;
+						" !!! FALHA !!! " << endl;*/
 				}
 				pOcupado1 = (pOcupado1 + 1) % 100;
 				ReleaseSemaphore(hLista1Livre, 1, NULL);
@@ -401,10 +400,10 @@ DWORD WINAPI MonitoraAlarme() {
 				produzAlarme(alarme, NSEQ_aux);
 
 				// envia por mailslot (printando como teste)
-				cout << getTIME(alarme.timestamp) <<
+				/*cout << getTIME(alarme.timestamp) <<
 					" NSEQ: "	<< std::setw(5) << std::setfill('0') << alarme.nSeq <<
 					" ID: "		<< alarme.id	<< 
-					" !!!!!!! ALARME !!!!!!! "	<< endl;
+					" !!!!!!! ALARME !!!!!!! "	<< endl;*/
 			}
 		}
 		else {
@@ -505,7 +504,11 @@ void produzAlarme (almType& alarme, int NSEQ_aux) {
 
 
 int setDIAG() {
-	int resultado = rand() % 70;
+	unsigned int rand_num;
+	if (rand_s(&rand_num) != 0)
+		printf("rand_s falhou em setDIAG()\n");
+
+	int resultado = rand_num % 70;
 	if (resultado >= 55) 
 		return 55;
 	else 
@@ -520,7 +523,11 @@ int setDIAG() {
 //}
 
 float setPRESS() {
-	int numSorteado = rand() % 2001 + 1000;
+	unsigned int rand_num;
+	if (rand_s(&rand_num) != 0) 
+		printf("rand_s falhou em setPRESS()\n");
+	
+	int numSorteado = rand_num % 2001 + 1000;
 	if (numSorteado % 10 == 0) numSorteado++;
 	float num = numSorteado / 10.0;
 
@@ -528,8 +535,11 @@ float setPRESS() {
 }
 
 float setTEMP() {
+	unsigned int rand_num;
+	if (rand_s(&rand_num) != 0)
+		printf("rand_s falhou em setTEMP()\n");
 
-	int numSorteado = rand() % 10001 + 10000;
+	int numSorteado = rand_num % 10001 + 10000;
 	if (numSorteado % 10 == 0) numSorteado++;
 	float num = numSorteado / 10;
 	
@@ -538,7 +548,11 @@ float setTEMP() {
 
 // Para o ID do alarme
 int setID() {
-	int numSorteado = rand() % 99;
+	unsigned int rand_num;
+	if (rand_s(&rand_num) != 0)
+		printf("rand_s falhou em setID()\n");
+
+	int numSorteado = rand_num % 99;
 	return numSorteado;
 }
 
