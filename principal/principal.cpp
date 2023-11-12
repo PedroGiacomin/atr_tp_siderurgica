@@ -200,7 +200,6 @@ DWORD WINAPI LeituraTeclado() {
 		switch (nTecla) {
 		case TECLA_1:
 			status = SetEvent(events[0]);
-			printf("Enviou evento 1\n");
 			break;
 		case TECLA_2:
 			status = SetEvent(events[1]);
@@ -216,7 +215,6 @@ DWORD WINAPI LeituraTeclado() {
 			break;
 		case TECLA_A:
 			status = SetEvent(events[5]);
-			printf("Enviou evento A\n");
 			break;
 		case ESC:
 			status = SetEvent(event_ESC);
@@ -251,7 +249,7 @@ DWORD WINAPI MonitoraListas() {
 			printf("Lista 1 cheia \n");
 		}
 		else if (nTipoEvento == 0) {
-			printf("Evento de encerramento \n");
+			printf("Tecla ESC digitada, encerrando o programa... \n");
 		}
 	} while (nTipoEvento != 0);
 

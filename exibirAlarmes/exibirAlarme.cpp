@@ -58,19 +58,18 @@ int main() {
 			nTipoEvento = ret - WAIT_OBJECT_0;
 
 			if (nTipoEvento == 0) {
-				printf("Evento de bloqueio \n");
+				printf("Tarefa de leitura do CLP de exibicao dos alarmes criticos foi bloqueada \n");
 				estadoLeitura = BLOQUEADO;
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n");
+				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 			//else if (nTipoEvento == 2) {
-			//	printf("Recebido evento dummy. Vez: %d\n", ++mensagem);
-			//}
 			//  TESTE-PG: ---- PLACEHOLDER PRA ESPERAR RECEBER A MENSAGEM NO MAILSLOT ---- //	
+			//}
+			
 		}
 		else {  //Estado de bloqueio
-			printf("Thread bloqueada\n");
 			ret = WaitForMultipleObjects(
 				2,					// Espera 3 eventos 
 				eventosBloqueado,	// Array de eventos que espera
@@ -81,11 +80,11 @@ int main() {
 			
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Evento de desbloqueio \n");
+				printf("Tarefa de leitura do CLP de exibicao dos alarmes criticos foi desbloqueada \n");
 				estadoLeitura = DESBLOQUEADO;
 			}
 			else if (nTipoEvento == 1) {
-				printf("Evento de encerramento \n");
+				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 		}
 	} while (nTipoEvento != 1); // Ate ESC ser escolhido
