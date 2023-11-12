@@ -32,7 +32,15 @@ DWORD WINAPI LeituraTeclado();
 DWORD WINAPI MonitoraListas();
 
 int main() {
-	printf("Hello, I'm principal.cpp\n");
+	printf("----- PAINEL DE CONTROLE ----- \n");
+	printf("Digite a seguinte tecla para: \n");
+	printf("   1 - bloquear/desbloquear a tarefa de leitura do CLP 1\n");
+	printf("   2 - bloquear/desbloquear a tarefa de leitura do CLP 2\n");
+	printf("   m - bloquear/desbloquear a tarefa de monitoracao de alarmes criticos\n");
+	printf("   r - bloquear/desbloquear a tarefa de retirada de mensagens\n");
+	printf("   p - bloquear/desbloquear a tarefa de exibicao de dados de processo\n");
+	printf("   a - bloquear/desbloquear a tarefa de exibicao de alarmes criticos\n");
+	printf("   ESC - encerrar o programa\n\n");
 	
 	// --- SETUP E VARIVEIS --- //
 	//Caminhos relativos dos executaveis a serem inicializados
@@ -56,7 +64,6 @@ int main() {
 	for (int i = 0; i < NUM_EVENTOS; ++i) {
 		std::string nomeEvento;
 		nomeEvento = "Evento_" + std::to_string(i);
-		std::cout << nomeEvento << std::endl;
 
 		events[i] = CreateEvent(
 			NULL,							// Seguranca (default)
@@ -182,9 +189,6 @@ int main() {
 	if (!status)
 		printf("Erro no fechamento do handle do evento ESC! Codigo = %d\n", GetLastError());
 
-	std::cout << "Aplicacao encerrada, pressione Enter para fechar o prompt." << std::endl;
-	std::cin.get();
-
 	return EXIT_SUCCESS;
 }
 
@@ -194,7 +198,7 @@ DWORD WINAPI LeituraTeclado() {
 	
 	// Espera uma tecla ser digitada ate ESC
 	do {
-		printf("Digite uma tecla para encerrar a tarefa que quiser\n");	//pode tirar isso depois
+		printf("Aguardando comando\n");	//pode tirar isso depois
 		nTecla = _getch();	// Isso aqui vai dar errado pra quando a lista estiver cheia
 
 		switch (nTecla) {

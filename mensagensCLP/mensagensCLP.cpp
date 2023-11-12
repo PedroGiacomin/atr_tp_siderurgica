@@ -15,11 +15,11 @@
 
 using namespace std;
 
-// Casting para terceiro e sexto parâmetros da função _beginthreadex
+// Casting para terceiro e sexto parï¿½metros da funï¿½ï¿½o _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
 typedef unsigned* CAST_LPDWORD;
 
-// Criação de tipos para indicar o estado da thread
+// Criaï¿½ï¿½o de tipos para indicar o estado da thread
 enum estado {
 	BLOQUEADO,
 	DESBLOQUEADO
@@ -53,19 +53,19 @@ msgType lista1[100];
 msgType lista2[50];
 BOOL eventoListaCheia = FALSE;
 
-// Declaração das funcões executadas pelas threads
+// Declaraï¿½ï¿½o das funcï¿½es executadas pelas threads
 DWORD WINAPI LeituraCLP(LPVOID index);
 DWORD WINAPI RetiraMensagem();
 DWORD WINAPI MonitoraAlarme();
 DWORD WINAPI ExibeDadosProcesso();
 
-// Declaração funções auxiliares da mensagem
+// Declaraï¿½ï¿½o funï¿½ï¿½es auxiliares da mensagem
 
 int setDIAG();		// Define aleatoriamente o valor de DIAG  em um intervalo de 0 a 55
 
-float setPRESS();	// Define aleatoriamente o valor de uma pressão em um intervalo de 100 a 300 com precisão de 1 casa decimal
+float setPRESS();	// Define aleatoriamente o valor de uma pressï¿½o em um intervalo de 100 a 300 com precisï¿½o de 1 casa decimal
 
-float setTEMP();	// Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisão de 1 casa decimal
+float setTEMP();	// Define aleatoriamente a temperatura em um intervalo de 1000 a 2000 com precisï¿½o de 1 casa decimal
 
 int setID();		// Define aleatoriamente um ID de 0 a 99
 
@@ -80,7 +80,7 @@ void produzAlarme(almType &alarme, int NSEQ_aux);				// Produz alarme critico do
 
 //string getDIAG(string &mensagem); // Retorna o valor do campo DIAG de uma mensagem
 
-// Criação de apontador para Mutexes e Semaforos 
+// Criaï¿½ï¿½o de apontador para Mutexes e Semaforos 
 HANDLE hLista1Livre;
 HANDLE hLista2Livre;
 HANDLE hLista1Ocup;
@@ -88,7 +88,7 @@ HANDLE hLista2Ocup;
 HANDLE hMutexNSEQ;
 HANDLE hMutexpLivre1;
 
-// Criação de HANDLES para eventos  
+// Criaï¿½ï¿½o de HANDLES para eventos  
 HANDLE event_ESC;		// evento de termino
 HANDLE event_M;			// eventos de bloqueio
 HANDLE event_P;
@@ -106,7 +106,7 @@ int main()
 	DWORD dwRet;
 	int i;
 
-	// Criação de Mutex e Semaforos
+	// Criaï¿½ï¿½o de Mutex e Semaforos
 	hLista1Livre = CreateSemaphore(NULL, 100, 100, L"Lista1Livre");
 	hLista2Livre = CreateSemaphore(NULL, 50, 50, L"Lista2Livre");
 	hLista1Ocup = CreateSemaphore(NULL, 0, 100, L"Lista1Ocup");
@@ -115,36 +115,36 @@ int main()
 	hMutexpLivre1 = CreateMutex(NULL, FALSE, NULL);
 
 
-	// Atribuição de apontadores para eventos criados em outro processo
-	event_ESC = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"EventoESC");
+	// Atribuiï¿½ï¿½o de apontadores para eventos criados em outro processo
+	event_ESC = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"EventoESC");
 	if (!event_ESC)
 		printf("Erro na abertura do handle para event_1 Codigo = %d\n", GetLastError());
 
-	event_M = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_2");
+	event_M = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_2");
 	if (!event_M)
 		printf("Erro na abertura do handle para event_M Codigo = %d\n", GetLastError());
 	
-	event_R = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_3");
+	event_R = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_3");
 	if (!event_R)
 		printf("Erro na abertura do handle para event_R! Codigo = %d\n", GetLastError());
 	
-	event_P = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_4");
+	event_P = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_4");
 	if (!event_P)
 		printf("Erro na abertura do handle para event_P! Codigo = %d\n", GetLastError());
 
-	event_1 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_0");
+	event_1 = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_0");
 	if (!event_1)
 		printf("Erro na abertura do handle para event_1 Codigo = %d\n", GetLastError());
 
-	event_2 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_1");
+	event_2 = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_1");
 	if (!event_2)
 		printf("Erro na abertura do handle para event_2! Codigo = %d\n", GetLastError());
 
-	event_lista1 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_L1");
+	event_lista1 = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_L1");
 	if (!event_lista1)
 		printf("Erro na abertura do handle para event_lista1! Codigo = %d\n", GetLastError());
 
-	event_lista2 = OpenEvent(EVENT_ALL_ACCESS, FALSE, (LPWSTR)"Evento_L2");
+	event_lista2 = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"Evento_L2");
 	if (!event_lista2)
 		printf("Erro na abertura do handle para event_lista2! Codigo = %d\n", GetLastError());
 ;
@@ -153,10 +153,10 @@ int main()
 		hThreads[i] = (HANDLE)_beginthreadex(
 			NULL,
 			0,
-			(CAST_FUNCTION)LeituraCLP,	// casting necessário
+			(CAST_FUNCTION)LeituraCLP,	// casting necessï¿½rio
 			(LPVOID)i,
 			0,
-			(CAST_LPDWORD)&dwThreadLeituraId	// casting necessário
+			(CAST_LPDWORD)&dwThreadLeituraId	// casting necessï¿½rio
 		);
 
 		if (hThreads[i]) printf("Thread de Leitura do CLP %d criada com Id= %0x \n", i, dwThreadLeituraId);
@@ -166,33 +166,33 @@ int main()
 	hThreads[2] = (HANDLE)_beginthreadex( 
 		NULL,
 		0,
-		(CAST_FUNCTION)RetiraMensagem,	// casting necessário
+		(CAST_FUNCTION)RetiraMensagem,	// casting necessï¿½rio
 		NULL,
 		0,
-		(CAST_LPDWORD)&dwThreadRetiraMensagemId);	// casting necessário
+		(CAST_LPDWORD)&dwThreadRetiraMensagemId);	// casting necessï¿½rio
 	if (hThreads[2]) printf("Thread de Retirada de Mensagens %d criada com Id= %0x \n", 2, dwThreadRetiraMensagemId);
 
-	// Cria a thread de monitoração de alarme e leitura do CLP
+	// Cria a thread de monitoraï¿½ï¿½o de alarme e leitura do CLP
 	hThreads[3] = (HANDLE)_beginthreadex( 
 		NULL,
 		0,
-		(CAST_FUNCTION)MonitoraAlarme,	// casting necessário
+		(CAST_FUNCTION)MonitoraAlarme,	// casting necessï¿½rio
 		NULL,
 		0,
-		(CAST_LPDWORD)&dwThreadMonitoraAlarmeId);	// casting necessário
+		(CAST_LPDWORD)&dwThreadMonitoraAlarmeId);	// casting necessï¿½rio
 	if (hThreads[3]) printf("Thread de Monitoracao de Alarme %d criada com Id= %0x \n", 3, dwThreadMonitoraAlarmeId);
 
-	// Cria a thread de monitoração de alarme e leitura do CLP
+	// Cria a thread de monitoraï¿½ï¿½o de alarme e leitura do CLP
 	hThreads[4] = (HANDLE)_beginthreadex( 
 		NULL,
 		0,
-		(CAST_FUNCTION)ExibeDadosProcesso,	// casting necessário
+		(CAST_FUNCTION)ExibeDadosProcesso,	// casting necessï¿½rio
 		NULL,
 		0,
-		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necessário
+		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necessï¿½rio
 	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);	
 
-	// Aguarda término das threads
+	// Aguarda tï¿½rmino das threads
 	dwRet = WaitForMultipleObjects(5, hThreads, TRUE, INFINITE);
 	CheckForError(dwRet == WAIT_OBJECT_0);
 
@@ -200,7 +200,7 @@ int main()
 	for (int i = 0; i < 5 ; ++i)
 		CloseHandle(hThreads[i]);
 
-	// Fecha os handles dos objetos de sincronização
+	// Fecha os handles dos objetos de sincronizaï¿½ï¿½o
 	CloseHandle(hMutexNSEQ);
 	CloseHandle(hMutexpLivre1);
 	CloseHandle(hLista1Livre);
@@ -219,7 +219,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 	msgType mensagem;
 	DWORD dwStatus, ret;
 	DWORD nTipoEvento;
-	estado estadoLeitura = DESBLOQUEADO; // Thread começa  desbloqueada
+	estado estadoLeitura = DESBLOQUEADO; // Thread comeï¿½a  desbloqueada
 
 	// Cria vetores de eventos
 	HANDLE event_CLP[2] = { event_1, event_2 };
@@ -231,7 +231,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
-			//// Espera a sua vez para usar NSEQ na criação da mensagem 	
+			//// Espera a sua vez para usar NSEQ na criaï¿½ï¿½o da mensagem 	
 			ret = WaitForMultipleObjects(3,	hEventoMutexNSEQ, FALSE, INFINITE);
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
@@ -242,7 +242,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
 				printf("Tecla ESC digitada, encerrando o programa... \n"); 
 			}
-			else if (nTipoEvento == 2) {   // Mutex para acessar a varivael NSEQ está disponível
+			else if (nTipoEvento == 2) {   // Mutex para acessar a varivael NSEQ estï¿½ disponï¿½vel
 				NSEQ_aux = NSEQ;
 				if (NSEQ != 99999) NSEQ++;
 				else NSEQ = 0; 
@@ -252,16 +252,16 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			// Uma vez concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
 			produzMensagem(mensagem, i + 1, NSEQ_aux);
 			
-			// Verifica se existem posições livres na lista1, esperando pelo tempo maximo de 1ms
+			// Verifica se existem posiï¿½ï¿½es livres na lista1, esperando pelo tempo maximo de 1ms
 			ret = WaitForMultipleObjects(3,	hEventoLista1Livre,FALSE,1);
 			CheckForError(ret);
-			if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida então a lista esta cheia 
-				if (eventoListaCheia == TRUE) { // Se o evento já foi sinalizado então reseta a variável auxiliar 
+			if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida entï¿½o a lista esta cheia 
+				if (eventoListaCheia == TRUE) { // Se o evento jï¿½ foi sinalizado entï¿½o reseta a variï¿½vel auxiliar 
 					eventoListaCheia = FALSE;
 				}
 				else {
-					SetEvent(event_lista1);// Informa ao processo de leitura do teclado que a lista1 está cheia
-					eventoListaCheia = TRUE; // Indica para outra thread que o evento já foi sinalizado
+					SetEvent(event_lista1);// Informa ao processo de leitura do teclado que a lista1 estï¿½ cheia
+					eventoListaCheia = TRUE; // Indica para outra thread que o evento jï¿½ foi sinalizado
 				} 
 				ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, INFINITE); // A thread fica bloqueada 
 			}
@@ -273,7 +273,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
 				printf("Tecla ESC digitada, encerrando o programa... \n"); 
 			}
-			else if (nTipoEvento == 2) {	// Existe uma posiçao livre na lista 1
+			else if (nTipoEvento == 2) {	// Existe uma posiï¿½ao livre na lista 1
 				ret = WaitForMultipleObjects(3, hEventoMutexpLivre1, FALSE, INFINITE);  
 				CheckForError(ret);
 				nTipoEvento = ret - WAIT_OBJECT_0;
@@ -285,7 +285,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 					printf("Tecla ESC digitada, encerrando o programa... \n");
 				}
 				else if (nTipoEvento == 2) {    // A variavel pLivre1 pode ser acessada 
-					lista1[pLivre1] = mensagem;			// A mensagem é colocada na lista na posição livre
+					lista1[pLivre1] = mensagem;			// A mensagem ï¿½ colocada na lista na posiï¿½ï¿½o livre
 					pLivre1 = (pLivre1 + 1) % 100;
 					ReleaseMutex(hMutexpLivre1);				// Libera o mutex da variavel pLivre1
 					ReleaseSemaphore(hLista1Ocup, 1, NULL);		// Indica que existe mensagem a ser lida

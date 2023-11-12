@@ -16,11 +16,11 @@ enum estado {
 };
 
 int main() {
-	printf("Hello, I'm exibirAlarme.cpp\n");
+	printf("Tarefa de exibicao de alarmes em execucao\n");
 
 	// Abre handles para os evento a criados
 	event_ESC = OpenEvent(
-		EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
+		EVENT_MODIFY_STATE | SYNCHRONIZE,			
 		FALSE,
 		(LPWSTR)"EventoESC"
 	);
@@ -28,7 +28,7 @@ int main() {
 		printf("Erro na abertura do handle para event_ESC! Codigo = %d\n", GetLastError());
 
 	event_A = OpenEvent(
-		EVENT_ALL_ACCESS,			//Acesso irrestrito ao evento
+		EVENT_MODIFY_STATE | SYNCHRONIZE,		
 		FALSE,
 		(LPWSTR)"Evento_5"
 	);
@@ -46,15 +46,14 @@ int main() {
 
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
-			// TESTE-PG: ---- PLACEHOLDER PRA ESPERAR RECEBER A MENSAGEM NO MAILSLOT ---- //
-			printf("Thread esperando evento\n");
+	
 			ret = WaitForMultipleObjects(
-				2,			// Espera 3 eventos 
+				2,			// Espera 2 eventos 
 				eventos,	// Array de eventos que espera
 				FALSE,		// Espera o que acontecer primeiro
 				INFINITE	// Espera por tempo indefinido
 			);
-			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 1));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 
 			if (nTipoEvento == 0) {
@@ -63,11 +62,7 @@ int main() {
 			}
 			else if (nTipoEvento == 1) {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
-			}
-			//else if (nTipoEvento == 2) {
-			//  TESTE-PG: ---- PLACEHOLDER PRA ESPERAR RECEBER A MENSAGEM NO MAILSLOT ---- //	
-			//}
-			
+			}		
 		}
 		else {  //Estado de bloqueio
 			ret = WaitForMultipleObjects(
@@ -88,9 +83,6 @@ int main() {
 			}
 		}
 	} while (nTipoEvento != 1); // Ate ESC ser escolhido
-	
-	std::cout << "Aplicacao encerrada, pressione Enter para fechar o prompt." << std::endl;
-	_getch();
 
 	return EXIT_SUCCESS;
 }
