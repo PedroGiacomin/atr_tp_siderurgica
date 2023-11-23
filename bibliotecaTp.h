@@ -1,4 +1,3 @@
-
 #define _CRT_RAND_S
 #include<Windows.h>
 #include <string.h>
@@ -46,9 +45,9 @@ int setDIAG() {
 		printf("rand_s falhou em setDIAG()\n");
 
 	int resultado = rand_num % 70;
-	if (resultado >= 55)
-		return 55;
-	else
+	// if (resultado >= 55)
+	// 	return 55;
+	// else
 		return resultado;
 }
 
@@ -83,7 +82,7 @@ int setID() {
 	if (rand_s(&rand_num) != 0)
 		printf("rand_s falhou em setID()\n");
 
-  // Gera numero aleatorio entre 3 e 12
+  // Gera numero aleatorio entre 3 e NUM_ALARMES + 3
 	int numSorteado = rand_num % NUM_ALARMES + 3;
 	return numSorteado;
 }
@@ -125,7 +124,19 @@ void produzAlarme(almType& alarme, int NSEQ_aux, int ID=0) {
 	
 }
 
+// Retorna um tempo aleatorio entre 1s e 5s em pacotes de 100ns
+int randTime1a5s(){
+    unsigned int rand_num;
+	  if (rand_s(&rand_num) != 0)
+		  printf("rand_s falhou em randTime1a5s()\n");
+    int tempo = (rand_num % 4001 + 1000) * 1e+4;
+    return tempo;
+}
+
 // Retorna a descrição do alarme de acordo com seu ID
+// 0 nao e usado
+// 1 e 2 sao reservados para falha de hardware
+// 3 a 12 sao alarmes de processo
 void printMensagemAlarme(int id) {
 	switch (id) {
 		case 1:
