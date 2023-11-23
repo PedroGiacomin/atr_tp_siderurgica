@@ -18,10 +18,12 @@
 #define NUM_EVENTOS 6
 
 // Handles para os eventos
-HANDLE events[6];		
-HANDLE event_ESC;		
-HANDLE event_lista1;	
+HANDLE events[6];
+HANDLE event_ESC;
+HANDLE event_lista1;
 HANDLE event_lista2;
+HANDLE event_mailslot;
+HANDLE event_mailslotCriado;
 
 // Casting para terceiro e sexto parâmetros da função _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
@@ -41,7 +43,7 @@ int main() {
 	printf("   p - bloquear/desbloquear a tarefa de exibicao de dados de processo\n");
 	printf("   a - bloquear/desbloquear a tarefa de exibicao de alarmes criticos\n");
 	printf("   ESC - encerrar o programa\n\n");
-	
+
 	// --- SETUP E VARIVEIS --- //
 	//Caminhos relativos dos executaveis a serem inicializados
 	LPCWSTR pathMensagensCLP = L"..\\Release\\mensagensCLP.exe";
@@ -85,26 +87,56 @@ int main() {
 	if (!event_ESC)
 		printf("Erro na criacao de do evento ESC! Codigo = %d\n", GetLastError());
 
-	//Criacao dos eventos de lista cheia
+	//Criacao do evento de lista cheia
 	event_lista1 = CreateEvent(
-		NULL,							// Seguranca (default)
-		FALSE,							// Reset automatico 
-		FALSE,							// Inicia desativado
-		(LPWSTR)"Evento_L1"				// Nome do evento
-	);
-	if (!event_ESC)
-		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
-
-	event_lista2 = CreateEvent(
 		NULL,							// Seguranca (default)
 		FALSE,							// Reset automatico
 		FALSE,							// Inicia desativado
-		(LPWSTR)"Evento_L2"				// Nome do evento
+		(LPWSTR)"Evento_L1"				// Nome do evento
 	);
-	if (!event_ESC)
-		printf("Erro na criacao de do evento lista2! Codigo = %d\n", GetLastError());
+	if (!event_lista1)
+		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
+
+
+	event_mailslot = CreateEvent(
+		NULL, 
+		FALSE,
+		FALSE,
+		(LPWSTR)"event_mailslot"
+	);
+	if (!event_mailslot)
+		printf("Erro na criacao de do evento mailslot! Codigo = %d\n", GetLastError());
+
+	event_mailslotCriado = CreateEvent(
+		NULL,
+		FALSE,
+		FALSE,
+		(LPWSTR)"event_mailslotCriado"
+	);
+	if (!event_mailslotCriado)
+		printf("Erro na criacao de do evento mailslotCriado! Codigo = %d\n", GetLastError());
 
 	// --- CRIACAO DOS PROCESSOS --- //
+	//Cria processo ExibirAlarme
+	ZeroMemory(&siExibirAlarme, sizeof(siExibirAlarme));
+	siExibirAlarme.cb = sizeof(siExibirAlarme);
+	ZeroMemory(&piExibirAlarme, sizeof(piExibirAlarme));
+
+	status = CreateProcess(
+		pathExibirAlarme,		// Nome do arquivo executavel
+		NULL,					// Argumentos de linha de comando (nenhum)
+		NULL,					// Atributos de seguranca do processo (default)
+		NULL,					// Atributos de seguranca das threads (default)
+		FALSE,					// Heranca de handles do processo criador (nao herda)
+		CREATE_NEW_CONSOLE,		// Flag para inicializar com um console diferente do processo-pai
+		NULL,					// Ambiente de criacao do processo (mesmo do pai)
+		NULL,					// Diretorio corrente (mesmo do pai)
+		&siExibirAlarme,		// Variavel que guarda informacoes de inicializacao
+		&piExibirAlarme			// Struct que guarda o PID do processo entre outras infos
+	);
+	if (!status)
+		printf("Erro na criacao de exibirAlarme! Codigo = %d\n", GetLastError());
+
 	//Cria processo mensagensCLP
 	ZeroMemory(&siMensagensCLP, sizeof(siMensagensCLP));
 	siMensagensCLP.cb = sizeof(siMensagensCLP);
@@ -125,26 +157,8 @@ int main() {
 	if (!status)
 		printf("Erro na criacao de mensagensCLP! Codigo = %d\n", GetLastError());
 
-	//Cria processo ExibirAlarme
-	ZeroMemory(&siExibirAlarme, sizeof(siExibirAlarme));
-	siExibirAlarme.cb = sizeof(siExibirAlarme);
-	ZeroMemory(&piExibirAlarme, sizeof(piExibirAlarme));
 
-	status = CreateProcess(
-		pathExibirAlarme,		// Nome do arquivo executavel
-		NULL,					// Argumentos de linha de comando (nenhum)
-		NULL,					// Atributos de seguranca do processo (default)
-		NULL,					// Atributos de seguranca das threads (default)
-		FALSE,					// Heranca de handles do processo criador (nao herda)
-		CREATE_NEW_CONSOLE,		// Flag para inicializar com um console diferente do processo-pai
-		NULL,					// Ambiente de criacao do processo (mesmo do pai)
-		NULL,					// Diretorio corrente (mesmo do pai)
-		&siExibirAlarme,		// Variavel que guarda informacoes de inicializacao
-		&piExibirAlarme			// Struct que guarda o PID do processo entre outras infos
-	);
-	if (!status)
-		printf("Erro na criacao de exibirAlarme! Codigo = %d\n", GetLastError());
-	
+
 	// --- CRIACAO DAS THREADS SECUNDARIAS --- //
 	hThreads[0] = (HANDLE)_beginthreadex(
 		NULL,										// Opcoes de seguranca (default)
@@ -171,7 +185,7 @@ int main() {
 
 	// --- ENCERRAMENTO DO PROGRAMA --- //
 	// ACHO que tem que esperar encerrar os processos ANTES, aqui
-	
+
 	// Aguarda termino das threads
 	dwRet = WaitForMultipleObjects(2, hThreads, TRUE, INFINITE);
 	if (dwRet != WAIT_OBJECT_0)
@@ -189,13 +203,16 @@ int main() {
 	if (!status)
 		printf("Erro no fechamento do handle do evento ESC! Codigo = %d\n", GetLastError());
 
+	// Não deveria fechar todos os handles aqui ??
+
+
 	return EXIT_SUCCESS;
 }
 
 DWORD WINAPI LeituraTeclado() {
 	BOOL status;	//retorno de erro
 	int nTecla;		//tecla digitada
-	
+
 	// Espera uma tecla ser digitada ate ESC
 	do {
 		printf("Aguardando comando\n");	//pode tirar isso depois
@@ -234,22 +251,20 @@ DWORD WINAPI LeituraTeclado() {
 DWORD WINAPI MonitoraListas() {
 
 	//Pra quando tiver o evento de lista cheia (1 ou 2)
-	HANDLE eventos[3] = { event_ESC, event_lista1, event_lista2};
-	int nTipoEvento = -1;
+	HANDLE eventos[3] = { event_ESC, event_lista1};
+	int nTipoEvento;
 	DWORD ret;
 	do {
 		ret = WaitForMultipleObjects(
-			3,					// Espera 3 eventos 
+			2,					// Espera 2 eventos 
 			eventos,			// Array de eventos que espera
 			FALSE,				// Espera o que acontecer primeiro
 			INFINITE			// Espera por tempo indefinido
 		);
 		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 		nTipoEvento = ret - WAIT_OBJECT_0;
-		if (nTipoEvento == 2) {
-			printf("Lista 2 cheia \n");
-		}
-		else if (nTipoEvento == 1) {
+
+		if (nTipoEvento == 1) {
 			printf("Lista 1 cheia \n");
 		}
 		else if (nTipoEvento == 0) {
