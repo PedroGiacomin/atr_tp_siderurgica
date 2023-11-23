@@ -90,7 +90,9 @@ int setID() {
 // Parse de tempo para string
 string getTIME(SYSTEMTIME tempo) {
 	ostringstream ss;
-	ss << tempo.wHour << ":" << tempo.wMinute << ":" << tempo.wSecond;
+	ss << setw(2) << setfill('0') << tempo.wHour << ":" 
+    << setw(2) << setfill('0') << tempo.wMinute << ":" 
+    << setw(2) << setfill('0') << tempo.wSecond;
 	string temp = ss.str();
 	return temp;
 }

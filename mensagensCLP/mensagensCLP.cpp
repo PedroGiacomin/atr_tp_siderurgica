@@ -244,9 +244,26 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 	HANDLE hEventoCLPBloqueado[2] = { event_CLP[i], event_ESC };
 	HANDLE hEventoLista1Livre[3] = { event_CLP[i], event_ESC, hLista1Livre };
 	HANDLE hEventoLista2Livre[3] = { event_CLP[i], event_ESC, hLista2Livre };
+	HANDLE hEventoTimer[3] = { event_CLP[i], event_ESC, hTimerCLP[i]};
 
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
+			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo timer
+			ret = WaitForMultipleObjects(3, hEventoTimer, FALSE, INFINITE);
+			CheckForError(ret);
+			nTipoEvento = ret - WAIT_OBJECT_0;
+
+			if (nTipoEvento == 0) {			// Bloqueio
+				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
+				estadoLeitura = BLOQUEADO;
+			}
+			else if (nTipoEvento == 1) {	// Encerramento
+				printf("Tecla ESC digitada, encerrando o programa... \n");
+			}
+			else if (nTipoEvento == 2) {	// Timer
+				// Nao precisa fazer nada na verdade
+			}
+
 			//// Espera a sua vez para usar NSEQ na cria��o da mensagem 	
 			ret = WaitForMultipleObjects(3, hEventoMutexNSEQ, FALSE, INFINITE);
 			CheckForError(ret);
@@ -321,7 +338,6 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 		}
-		Sleep(500);
 	} while (nTipoEvento != 1);
 	return 0;
 }
