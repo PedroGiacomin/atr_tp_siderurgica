@@ -72,8 +72,6 @@ int main() {
 
 	int mensagem = 0;
 
-
-
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
 

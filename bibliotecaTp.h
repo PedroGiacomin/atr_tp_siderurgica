@@ -8,8 +8,9 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
 
-
+#define NUM_ALARMES 10
 
 using namespace std;
 // Criação de tipos para indicar o estado da thread
@@ -82,7 +83,8 @@ int setID() {
 	if (rand_s(&rand_num) != 0)
 		printf("rand_s falhou em setID()\n");
 
-	int numSorteado = rand_num % 99;
+  // Gera numero aleatorio entre 3 e 12
+	int numSorteado = rand_num % NUM_ALARMES + 3;
 	return numSorteado;
 }
 
@@ -93,8 +95,6 @@ string getTIME(SYSTEMTIME tempo) {
 	string temp = ss.str();
 	return temp;
 }
-
-
 
 // Cria mensagens como struct 
 void produzMensagem(msgType& mensagem, int ID, int NSEQ_aux) {
@@ -125,9 +125,7 @@ void produzAlarme(almType& alarme, int NSEQ_aux, int ID=0) {
 	
 }
 
-
 // Retorna a descrição do alarme de acordo com seu ID
-
 void printMensagemAlarme(int id) {
 	switch (id) {
 		case 1:
@@ -136,9 +134,37 @@ void printMensagemAlarme(int id) {
 		case 2:
 			cout << "FALHA HARDWARE CLP No. 2" << endl;
 			break;
+		case 3:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 3" << endl;
+			break;
+		case 4:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 4" << endl;
+			break;
+		case 5:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 5" << endl;
+			break;
+		case 6:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 6" << endl;
+			break;
+		case 7:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 7" << endl;
+			break;
+		case 8:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 8" << endl;
+			break;
+		case 9:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 9" << endl;
+			break;
+		case 10:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 10" << endl;
+			break;
+		case 11:
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 11" << endl;
+			break;
+		case 12: 
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 12" << endl;
+			break;
 		default:
-			cout << " " << endl;
-
-	}
-    
+			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO  " << endl;
+	}    
 }
