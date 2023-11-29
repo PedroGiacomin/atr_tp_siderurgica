@@ -22,8 +22,10 @@ HANDLE events[6];
 HANDLE event_ESC;
 HANDLE event_lista1;
 HANDLE event_lista2;
-HANDLE event_mailslot;
 HANDLE event_mailslotCriado;
+
+// Vetor para armazenar os estados(BLOQUEADO/DESBLOQUEADO) das threads
+BOOL estadosThreads[6]={ TRUE, TRUE, TRUE, TRUE, TRUE, TRUE }; // Todas as threads começam desbloqueadas (TRUE);;
 
 // Casting para terceiro e sexto parâmetros da função _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
@@ -32,6 +34,7 @@ typedef unsigned* CAST_LPDWORD;
 // Declaração das funcões executadas pelas threads
 DWORD WINAPI LeituraTeclado();
 DWORD WINAPI MonitoraListas();
+void printEstadoThread(int numEvento);
 
 int main() {
 	printf("----- PAINEL DE CONTROLE ----- \n");
@@ -97,15 +100,6 @@ int main() {
 	if (!event_lista1)
 		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
 
-
-	event_mailslot = CreateEvent(
-		NULL, 
-		FALSE,
-		FALSE,
-		(LPWSTR)"event_mailslot"
-	);
-	if (!event_mailslot)
-		printf("Erro na criacao de do evento mailslot! Codigo = %d\n", GetLastError());
 
 	event_mailslotCriado = CreateEvent(
 		NULL,
@@ -203,8 +197,16 @@ int main() {
 	if (!status)
 		printf("Erro no fechamento do handle do evento ESC! Codigo = %d\n", GetLastError());
 
-	// Não deveria fechar todos os handles aqui ??
+	// Fecha handle do evento lista1
+	status = CloseHandle(event_lista1);
+	if (!status)
+		printf("Erro no fechamento do handle do evento de lista1! Codigo = %d\n", GetLastError());
 
+	// Fecha handle do evento mailslotCriado
+	status = CloseHandle(event_mailslotCriado);
+	if (!status)
+		printf("Erro no fechamento do handle do evento mailslotCriado! Codigo = %d\n", GetLastError());
+	
 
 	return EXIT_SUCCESS;
 }
@@ -219,23 +221,31 @@ DWORD WINAPI LeituraTeclado() {
 		nTecla = _getch();	// Isso aqui vai dar errado pra quando a lista estiver cheia
 
 		switch (nTecla) {
+
 		case TECLA_1:
 			status = SetEvent(events[0]);
+			printEstadoThread(0);
 			break;
+
 		case TECLA_2:
 			status = SetEvent(events[1]);
+			printEstadoThread(1);
 			break;
 		case TECLA_M:
 			status = SetEvent(events[2]);
+			printEstadoThread(2);
 			break;
 		case TECLA_R:
 			status = SetEvent(events[3]);
+			printEstadoThread(3);
 			break;
 		case TECLA_P:
 			status = SetEvent(events[4]);
+			printEstadoThread(4);
 			break;
 		case TECLA_A:
 			status = SetEvent(events[5]);
+			printEstadoThread(5);
 			break;
 		case ESC:
 			status = SetEvent(event_ESC);
@@ -273,4 +283,37 @@ DWORD WINAPI MonitoraListas() {
 	} while (nTipoEvento != 0);
 
 	return 0;
+}
+
+void printEstadoThread(int numEvento) {
+
+	switch (numEvento) {
+
+	case 0:
+		printf("Tarefa de Leitura do CLP1 ");
+		break;
+	case 1:
+		printf("Tarefa de Leitura do CLP2 ");
+		break;
+	case 2:
+		printf("Tarefa de Monitoracao dos Alarmes Críticos foi ");
+		break;
+	case 3:
+		printf("Tarefa de Retirada de Mensagens foi ");
+		break;
+	case 4:
+		printf("Tarefa de Exibir Dados do Processo foi ");
+		break;
+	case 5:
+		printf("Tarefa de Exibir Alarmes foi ");
+		break;
+	}
+	if (estadosThreads[numEvento] == TRUE) {
+		printf("foi bloqueada\n");
+		estadosThreads[numEvento] = FALSE;
+	}
+	else {
+		printf("foi desbloqueada\n");
+		estadosThreads[numEvento] = TRUE;
+	}
 }

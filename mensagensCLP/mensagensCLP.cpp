@@ -55,7 +55,6 @@ HANDLE event_1;
 HANDLE event_2;
 HANDLE event_lista1;	// eventos de lista cheia
 HANDLE event_lista2;
-HANDLE event_mailslot;
 HANDLE event_mailslotCriado;
 
 // HANDLE para mailslot
@@ -115,10 +114,6 @@ int main()
 	if (!event_lista2)
 		printf("Erro na abertura do handle para event_lista2! Codigo = %d\n", GetLastError());
 
-	event_mailslot = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"event_mailslot");
-	if (!event_mailslot)
-		printf("Erro na abertura do handle para  event_mailslot! Codigo = %d\n", GetLastError());
-
 	event_mailslotCriado = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"event_mailslotCriado");
 	if (!event_mailslotCriado)
 		printf("Erro na abertura do handle para  event_mailslotCriado! Codigo = %d\n", GetLastError());
@@ -167,7 +162,7 @@ int main()
 		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necess�rio
 	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);
 
-	WaitForSingleObject(event_mailslotCriado, INFINITE);
+	WaitForSingleObject(event_mailslotCriado, INFINITE); // Espera o servidor criar o mailslot
 
 	hMailslot = CreateFile(
 		L"\\\\.\\mailslot\\MyMailslot",
@@ -186,14 +181,30 @@ int main()
 	// Fecha todos os handles de objetos do kernel
 	for (int i = 0; i < 5; ++i)
 		CloseHandle(hThreads[i]);
-
+	
+	
 	// Fecha os handles dos objetos de sincroniza��o
 	CloseHandle(hMutexNSEQ);
+	CloseHandle(hMutexMailslot);
+	CloseHandle(hMutexListaCheia);
 	CloseHandle(hMutexpLivre1);
 	CloseHandle(hLista1Livre);
 	CloseHandle(hLista2Livre);
 	CloseHandle(hLista1Ocup);
 	CloseHandle(hLista2Ocup);
+
+	// Fecha os handles para os eventos
+	CloseHandle(event_ESC);		
+	CloseHandle(event_M);			
+	CloseHandle(event_P);
+	CloseHandle(event_R);
+	CloseHandle(event_1);
+	CloseHandle(event_2);
+	CloseHandle(event_lista1);	
+	CloseHandle(event_mailslotCriado);
+
+	// Fecha o handle para o mailslot
+	CloseHandle(hMailslot);
 
 	return EXIT_SUCCESS;
 }	// main
@@ -395,7 +406,6 @@ DWORD WINAPI MonitoraAlarme() {
 				produzAlarme(alarme, NSEQ_aux);
 				WaitForSingleObject(hMutexMailslot, INFINITE);
 				bStatus = WriteFile(hMailslot, &alarme, sizeof(almType), &dwBytesEnviados, NULL);
-				SetEvent(event_mailslot);
 				ReleaseMutex(hMutexMailslot);
 			}
 		}
