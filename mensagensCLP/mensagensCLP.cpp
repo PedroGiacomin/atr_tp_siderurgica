@@ -60,6 +60,8 @@ HANDLE event_mailslotCriado;
 // HANDLE para mailslot
 HANDLE hMailslot;
 
+// HANDLES para os temporizadores
+HANDLE hTimerCLP[3];
 
 estado estadoRetiraMensagem; 
 
@@ -69,9 +71,10 @@ int main()
 	DWORD dwThreadLeituraId, dwThreadRetiraMensagemId, dwThreadMonitoraAlarmeId, dwThreadExibeDados;
 	DWORD dwExitCode = 0;
 	DWORD dwRet;
+	bool bSucesso;
 	int i;
 
-	// Cria��o de Mutex e Semaforos
+	// ------- SEMAFOROS E MUTEXES -------//
 	hLista1Livre = CreateSemaphore(NULL, 100, 100, L"Lista1Livre");
 	hLista2Livre = CreateSemaphore(NULL, 50, 50, L"Lista2Livre");
 	hLista1Ocup = CreateSemaphore(NULL, 0, 100, L"Lista1Ocup");
@@ -81,6 +84,7 @@ int main()
 	hMutexMailslot = CreateMutex(NULL, FALSE, NULL);
 	hMutexListaCheia = CreateMutex(NULL, FALSE, NULL);
 
+	// ------- EVENTOS ------//
 	// Atribui��o de apontadores para eventos criados em outro processo
 	event_ESC = OpenEvent(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, (LPWSTR)"EventoESC");
 	if (!event_ESC)
@@ -118,7 +122,29 @@ int main()
 	if (!event_mailslotCriado)
 		printf("Erro na abertura do handle para  event_mailslotCriado! Codigo = %d\n", GetLastError());
 	
+	// ------- TEMPORIZADORES -------//
+	// Criacao dos temporizadores para cada CLP
+	hTimerCLP[0] = CreateWaitableTimer(NULL, FALSE, L"TimerCLP1");
+	CheckForError(hTimerCLP[0]);
+	hTimerCLP[1] = CreateWaitableTimer(NULL, FALSE, L"TimerCLP2");
+	CheckForError(hTimerCLP[1]);
+	hTimerCLP[2] = CreateWaitableTimer(NULL, TRUE, L"TimerCLP3");	//Tem que ser manual para poder trocar a temporizacao
+	CheckForError(hTimerCLP[2]);
 
+	// Inicializacao dos temporizadores
+	LARGE_INTEGER Preset;
+	Preset.QuadPart = 0;
+
+	bSucesso = SetWaitableTimer(hTimerCLP[0], &Preset, 500, NULL, NULL, FALSE);
+	CheckForError(bSucesso);
+	bSucesso = SetWaitableTimer(hTimerCLP[1], &Preset, 500, NULL, NULL, FALSE);
+	CheckForError(bSucesso);
+
+	int timeCLP3 = randTime1a5s();	// Calcula tempo aleatorio
+	bSucesso = SetWaitableTimer(hTimerCLP[2], &Preset, timeCLP3, NULL, NULL, FALSE);
+	CheckForError(bSucesso);
+
+	// ------- CRIACAO DAS THREADS -------//
 	for (i = 0; i < 2; ++i) {	// cria 2 threads de leitura do CLP
 		hThreads[i] = (HANDLE)_beginthreadex(
 			NULL,
@@ -162,6 +188,7 @@ int main()
 		(CAST_LPDWORD)&dwThreadExibeDados);	// casting necess�rio
 	if (hThreads[4]) printf("Thread de Exibicao de Dados do processo %d criada com Id= %0x \n", 4, dwThreadExibeDados);
 
+
 	WaitForSingleObject(event_mailslotCriado, INFINITE); // Espera o servidor criar o mailslot
 
 	hMailslot = CreateFile(
@@ -174,6 +201,7 @@ int main()
 		NULL);
 	CheckForError(hMailslot != INVALID_HANDLE_VALUE);
 
+	// ------- ENCERRAMENTO DA APLICACAO -------//
 	// Aguarda t�rmino das threads
 	dwRet = WaitForMultipleObjects(5, hThreads, TRUE, INFINITE);
 	CheckForError(dwRet == WAIT_OBJECT_0);
@@ -227,9 +255,26 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 	HANDLE hEventoCLPBloqueado[2] = { event_CLP[i], event_ESC };
 	HANDLE hEventoLista1Livre[3] = { event_CLP[i], event_ESC, hLista1Livre };
 	HANDLE hEventoLista2Livre[3] = { event_CLP[i], event_ESC, hLista2Livre };
+	HANDLE hEventoTimer[3] = { event_CLP[i], event_ESC, hTimerCLP[i]};
 
 	do {
 		if (estadoLeitura == DESBLOQUEADO) {
+			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo timer
+			ret = WaitForMultipleObjects(3, hEventoTimer, FALSE, INFINITE);
+			CheckForError(ret);
+			nTipoEvento = ret - WAIT_OBJECT_0;
+
+			if (nTipoEvento == 0) {			// Bloqueio
+				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
+				estadoLeitura = BLOQUEADO;
+			}
+			else if (nTipoEvento == 1) {	// Encerramento
+				printf("Tecla ESC digitada, encerrando o programa... \n");
+			}
+			else if (nTipoEvento == 2) {	// Timer
+				// Nao precisa fazer nada na verdade
+			}
+
 			//// Espera a sua vez para usar NSEQ na cria��o da mensagem 	
 			ret = WaitForMultipleObjects(3, hEventoMutexNSEQ, FALSE, INFINITE);
 			CheckForError(ret);
@@ -304,7 +349,6 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 		}
-		Sleep(500);
 	} while (nTipoEvento != 1);
 	return 0;
 }
@@ -372,31 +416,52 @@ DWORD WINAPI RetiraMensagem() {
 }
 
 DWORD WINAPI MonitoraAlarme() {
-	Sleep(500);
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
 	HANDLE hEventoMonitoraAlarme[3] = { event_M, event_ESC, hMutexNSEQ };
+	HANDLE hEventoTimer[3] = { event_M, event_ESC, hTimerCLP[2]};
+	LARGE_INTEGER Preset;
+
 	int NSEQ_aux;
 	almType alarme;
 	BOOL bStatus;
 	DWORD dwBytesEnviados;
 
-	// Define aleatoriamente um intervalo entre 1 a 5 s para disparar o alarme 
-	int tempoDormindo = rand() % 4001 + 1000;
-
 	do {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
+			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo timer
+			ret = WaitForMultipleObjects(3, hEventoTimer, FALSE, INFINITE);
+			CheckForError(ret);
+			nTipoEvento = ret - WAIT_OBJECT_0;
+
+			if (nTipoEvento == 0) {			// Bloqueio
+				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
+				estadoMonitoraAlarme = BLOQUEADO;
+			}
+			else if (nTipoEvento == 1) {	// Encerramento
+				printf("Tecla ESC digitada, encerrando o programa... \n");
+			}
+			else if (nTipoEvento == 2) {	// Timer
+				//Seta um novo tempo aleatorio
+				bStatus = CancelWaitableTimer(hTimerCLP[2]);
+				CheckForError(bStatus);
+
+				Preset.QuadPart = (- 1)* randTime1a5s();
+				bStatus = SetWaitableTimer(hTimerCLP[2], &Preset, 0, NULL, NULL, FALSE);
+				CheckForError(bStatus);
+			}
+
 			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo mutex do NSEQ
 			ret = WaitForMultipleObjects(3, hEventoMonitoraAlarme, FALSE, INFINITE);
 			CheckForError(ret);
-
+			
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Bloqueio
 				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
 				estadoMonitoraAlarme = BLOQUEADO;
 			}
 			else if (nTipoEvento == 1) {	// Encerramento
-				printf("Tecla ESC digitada, encerrando o programa... \n");;
+				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 			else if (nTipoEvento == 2) {	// Mutex
 				NSEQ_aux = NSEQ;
@@ -421,7 +486,6 @@ DWORD WINAPI MonitoraAlarme() {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
 			}
 		}
-		Sleep(tempoDormindo);
 	} while (nTipoEvento != 1);
 	return 0;
 }
@@ -449,7 +513,7 @@ DWORD WINAPI ExibeDadosProcesso() {
 			else if (nTipoEvento == 2) {	// Existem mensagens a serem lidas na lista 2
 				mensagem = lista2[pOcupado2]; // Le a mensagem
 
-				cout << getTIME(mensagem.timestamp) <<
+				std::cout << getTIME(mensagem.timestamp) <<
 					" NSEQ: " << setw(5) << setfill('0') << mensagem.nSeq <<
 					" ID: " << mensagem.id <<
 					" PR INT: " << mensagem.presInt <<

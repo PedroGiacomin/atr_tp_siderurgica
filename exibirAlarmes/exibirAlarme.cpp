@@ -15,13 +15,13 @@ HANDLE hMailslot;
 BOOL ESC;
 using namespace std;
 
-estado estadoExibirAlarme = DESBLOQUEADO; // Thread comeÁa  desbloqueada
+estado estadoExibirAlarme = DESBLOQUEADO; // Thread come√ßa  desbloqueada
 
-// Casting para terceiro e sexto par‚metros da funÁ„o _beginthreadex
+// Casting para terceiro e sexto par√¢metros da fun√ß√£o _beginthreadex
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
 typedef unsigned* CAST_LPDWORD;
 
-// DeclaraÁ„o das funcıes executadas pelas threads
+// Declara√ß√£o das func√µes executadas pelas threads
 DWORD WINAPI ExibirAlarme();
 DWORD WINAPI MonitoraEvento();
 
@@ -63,7 +63,7 @@ int main() {
 	hThreads[0] = (HANDLE)_beginthreadex(
 		NULL,										// Opcoes de seguranca (default)
 		0,											// Tamanho da pilha (default)
-		(CAST_FUNCTION)ExibirAlarme,				// Logica da thread (casting necess·rio)
+		(CAST_FUNCTION)ExibirAlarme,				// Logica da thread (casting necess√°rio)
 		NULL,										// Argumentos da thread (nao tem)
 		0,											// Flags da thread (nao tem)	
 		(CAST_LPDWORD)&dwThreadExibirAlarmeID		// Variavel que guarda o Id (casting necessario)
@@ -74,7 +74,7 @@ int main() {
 	hThreads[1] = (HANDLE)_beginthreadex(
 		NULL,										// Opcoes de seguranca (default)
 		0,											// Tamanho da pilha (default)
-		(CAST_FUNCTION)MonitoraEvento,				// Logica da thread (casting necess·rio)
+		(CAST_FUNCTION)MonitoraEvento,				// Logica da thread (casting necess√°rio)
 		NULL,										// Argumentos da thread (nao tem)
 		0,											// Flags da thread (nao tem)	
 		(CAST_LPDWORD)&dwThreadMonitoraEventoId		// Variavel que guarda o Id (casting necessario)
@@ -118,7 +118,7 @@ DWORD WINAPI ExibirAlarme() {
 		do {
 			if (estadoExibirAlarme == DESBLOQUEADO) {
 				if (GetMailslotInfo(hMailslot, NULL, &bytesNextMessage, &messages, &messagesSize) == FALSE) {
-					cout << "Erro ao obter informaÁıes do mailslot. CÛdigo de erro: " << GetLastError() << endl;
+					cout << "Erro ao obter informa√ß√µes do mailslot. C√≥digo de erro: " << GetLastError() << endl;
 					CloseHandle(hMailslot);
 					return 1;
 				}
@@ -148,6 +148,7 @@ DWORD WINAPI MonitoraEvento() {
 	HANDLE eventos[2] = { event_ESC, event_A};
 	int nTipoEvento;
 	DWORD ret;
+
 	do {
 		ret = WaitForMultipleObjects(
 			2,					// Espera 2 eventos 
