@@ -87,7 +87,7 @@ int main() {
 	if (!event_ESC)
 		printf("Erro na criacao de do evento ESC! Codigo = %d\n", GetLastError());
 
-	//Criacao do evento de lista cheia
+	//Criacao dos eventos de lista cheia
 	event_lista1 = CreateEvent(
 		NULL,							// Seguranca (default)
 		FALSE,							// Reset automatico
@@ -97,6 +97,15 @@ int main() {
 	if (!event_lista1)
 		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
 
+	//Criacao dos eventos de lista cheia
+	event_lista2 = CreateEvent(
+		NULL,							// Seguranca (default)
+		FALSE,							// Reset automatico
+		FALSE,							// Inicia desativado
+		(LPWSTR)"Evento_L2"				// Nome do evento
+	);
+	if (!event_lista2)
+		printf("Erro na criacao de do evento lista1! Codigo = %d\n", GetLastError());
 
 	event_mailslot = CreateEvent(
 		NULL, 
