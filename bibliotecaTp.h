@@ -141,43 +141,41 @@ int randTime1a5s(){
 // 3 a 12 sao alarmes de processo
 void printMensagemAlarme(int id) {
 	switch (id) {
-		case 1:
-			cout<< "FALHA HARDWARE CLP No. 1" << endl;
-			break;
-		case 2:
-			cout << "FALHA HARDWARE CLP No. 2" << endl;
-			break;
-		case 3:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 3" << endl;
-			break;
-		case 4:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 4" << endl;
-			break;
-		case 5:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 5" << endl;
-			break;
-		case 6:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 6" << endl;
-			break;
-		case 7:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 7" << endl;
-			break;
-		case 8:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 8" << endl;
-			break;
-		case 9:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 9" << endl;
-			break;
-		case 10:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 10" << endl;
-			break;
-		case 11:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 11" << endl;
-			break;
-		case 12: 
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO ALARME 12" << endl;
-			break;
-		default:
-			cout << "ID: " << setw(2) << setfill('0') << id << " TEXTO  " << endl;
-	}    
+	case 1:
+		cout << "FALHA HARDWARE CLP No. 1" << endl;
+		break;
+	case 2:
+		cout << "FALHA HARDWARE CLP No. 2" << endl;
+		break;
+	case 3:
+		cout << "ID: " << setw(2) << setfill('0') << id << " BAIXISSIMA PRESSAO DE GAS INERTE" << endl;
+		break;
+	case 4:
+		cout << "ID: " << setw(2) << setfill('0') << id << " ALTISSIMA VAZAO MASSICA DESSULFURANTE " << endl;
+		break;
+	case 5:
+		cout << "ID: " << setw(2) << setfill('0') << id << " BAIXISSIMA PROFUNDIDADE DA LANCA INJETORA" << endl;
+		break;
+	case 6:
+		cout << "ID: " << setw(2) << setfill('0') << id << " NIVEL ACIMA DA CAPACIDADE NO SILO DE ARMAZENAMENTO" << endl;
+		break;
+	case 7:
+		cout << "ID: " << setw(2) << setfill('0') << id << " BAIXISSIMA PRESSAO DE ARRASTE" << endl;
+		break;
+	case 8:
+		cout << "ID: " << setw(2) << setfill('0') << id << " ALTISSIMA CONDUTIVIDADE DO FLUIDO" << endl;
+		break;
+	case 9:
+		cout << "ID: " << setw(2) << setfill('0') << id << " ALTISSIMA VELOCIDADE DE ROTACAO DA LANCA INJETORA" << endl;
+		break;
+	case 10:
+		cout << "ID: " << setw(2) << setfill('0') << id << " BAIXISSIMA TEMPERATURA NO SILO DE ARMAZENAMENTO" << endl;
+		break;
+	case 11:
+		cout << "ID: " << setw(2) << setfill('0') << id << " ALTA CONDUTIVIDADE DO FLUIDO" << endl;
+		break;
+	case 12:
+		cout << "ID: " << setw(2) << setfill('0') << id << " BAIXISSIMA VAZAO DE GAS INERTE" << endl;
+		break;
+	}
 }
