@@ -5,7 +5,7 @@
 #include <Windows.h>
 #include <process.h>
 #include <conio.h>
-#include "CheckForError.h"
+#include "../CheckForError.h"
 
 
 HANDLE event_A;

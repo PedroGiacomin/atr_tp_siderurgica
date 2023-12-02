@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <process.h>	// _beginthreadex() e _endthreadex() 
 #include <conio.h>		// _getch
-#include "CheckForError.h"
+#include "../CheckForError.h"
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -22,6 +22,7 @@ typedef unsigned* CAST_LPDWORD;
 
 // Variaveis Globais 
 int NSEQ = 0;
+int NSEQAlarme = 0;
 int pLivre1 = 0;
 int pLivre2 = 0;
 int pOcupado1 = 0;
@@ -42,6 +43,7 @@ HANDLE hLista2Livre;
 HANDLE hLista1Ocup;
 HANDLE hLista2Ocup;
 HANDLE hMutexNSEQ;
+HANDLE hMutexNSEQAlarme;
 HANDLE hMutexpLivre1;
 HANDLE hMutexMailslot;
 HANDLE hMutexListaCheia;
@@ -80,6 +82,7 @@ int main()
 	hLista1Ocup = CreateSemaphore(NULL, 0, 100, L"Lista1Ocup");
 	hLista2Ocup = CreateSemaphore(NULL, 0, 50, L"Lista2Ocup");
 	hMutexNSEQ = CreateMutex(NULL, FALSE, NULL);
+	hMutexNSEQAlarme = CreateMutex(NULL, FALSE, NULL);
 	hMutexpLivre1 = CreateMutex(NULL, FALSE, NULL);
 	hMutexMailslot = CreateMutex(NULL, FALSE, NULL);
 	hMutexListaCheia = CreateMutex(NULL, FALSE, NULL);
@@ -266,11 +269,12 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			
 			if (nTipoEvento == 0) {			// Bloqueio
-				printf("Tarefa Leitura do CLP%d foi bloqueada \n", i + 1);
 				estadoLeitura = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Encerramento
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {	// Timer
 				// Continua a execucao do programa
@@ -281,11 +285,12 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-				printf("Tarefa Leitura do CLP%d foi bloqueada \n", i + 1);
 				estadoLeitura = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {   // Mutex para acessar a varivael NSEQ est� dispon�vel
 				NSEQ_aux = NSEQ;
@@ -297,8 +302,8 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			// Uma vez concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
 			produzMensagem(mensagem, i + 1, NSEQ_aux);
 
-			// Verifica se existem posi��es livres na lista1, esperando pelo tempo maximo de 1ms
-			ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, 1);
+			// Verifica se existem posi��es livres na lista1, esperando pelo tempo maximo de 10 ms
+			ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, 10);
 			CheckForError(ret);
 			if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida ent�o a lista esta cheia 
 				WaitForSingleObject(hMutexListaCheia, INFINITE);
@@ -312,22 +317,24 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			}
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-				printf("Tarefa Leitura do CLP%d foi bloqueada \n", i + 1);
 				estadoLeitura = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {	// Existe uma posi�ao livre na lista 1
 				ret = WaitForMultipleObjects(3, hEventoMutexpLivre1, FALSE, INFINITE);
 				CheckForError(ret);
 				nTipoEvento = ret - WAIT_OBJECT_0;
 				if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-					printf("Tarefa Leitura do CLP%d foi bloqueada \n", i + 1);
 					estadoLeitura = BLOQUEADO;
+					continue;
 				}
 				else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
 					printf("Tecla ESC digitada, encerrando o programa... \n");
+					continue;
 				}
 				else if (nTipoEvento == 2) {    // A variavel pLivre1 pode ser acessada 
 					lista1[pLivre1] = mensagem;			// A mensagem � colocada na lista na posi��o livre
@@ -344,11 +351,12 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Tarefa Leitura do CLP%d foi desbloqueada \n", i + 1);
 				estadoLeitura = DESBLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 		}
 	} while (nTipoEvento != 1);
@@ -361,10 +369,12 @@ DWORD WINAPI RetiraMensagem() {
 	DWORD ret, nTipoEvento;
 	HANDLE hEventoLista1Ocup[3] = { event_R, event_ESC, hLista1Ocup };
 	HANDLE hEventoRetiraMensagemBloqueada[2] = { event_R, event_ESC };
+	HANDLE hEventoLista2Livre[3] = { event_R, event_ESC, hLista2Livre };
 	msgType mensagem;
 	almType alarmeCLP;
 	BOOL bStatus;
 	DWORD dwBytesEnviados;
+	int NSEQ_aux;
 
 	do {
 		if (estadoRetiraMensagem == DESBLOQUEADO) {
@@ -373,24 +383,48 @@ DWORD WINAPI RetiraMensagem() {
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Tarefa de retirada de mensagens foi bloqueada \n");
 				estadoRetiraMensagem = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {		// Existem mensagens a serem lidas da lista1 
 				mensagem = lista1[pOcupado1];	// Le mensagem da lista 1
 
-				if (mensagem.diag != 55) {
-					WaitForSingleObject(hLista2Livre, INFINITE);	// Verifica se tem espaco na lista 2 para escrever
+				// Verifica se existem posicoes livres na lista2, esperando pelo tempo maximo de 10 ms
+				ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, 10);
+				CheckForError(ret);
+				if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedido entao a lista 2 esta cheia 
+					SetEvent(event_lista2); 
+					ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, INFINITE); // A thread fica bloqueada 
+				}
+				nTipoEvento = ret - WAIT_OBJECT_0;
+				if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
+					estadoRetiraMensagem = BLOQUEADO;
+					continue;
+				}
+				else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+					printf("Tecla ESC digitada, encerrando o programa... \n");
+					continue;
+				}
+				else if (nTipoEvento == 2) {	// Existe uma posicao livre na lista 2
 					lista2[pLivre2] = mensagem;						// Escreve mensagem na lista 2
 					pLivre2 = (pLivre2 + 1) % 50;
 					ReleaseSemaphore(hLista2Ocup, 1, NULL);			// Sinaliza que tem mensagens a serem lidas na lista 2
 				}
-				else {	// Deve produzir um alarme indicando falha de hardware no CLP 
+
+				if (mensagem.diag == 55) {  // Deve produzir um alarme indicando falha de hardware no CLP 
+					WaitForSingleObject(hMutexNSEQAlarme, INFINITE);
+					NSEQ_aux = NSEQAlarme;
+					if (NSEQAlarme != 99999) NSEQAlarme++;
+					else NSEQAlarme = 0;
+					ReleaseMutex(hMutexNSEQAlarme);
+					
+					produzAlarme(alarmeCLP, NSEQ_aux, mensagem.id);
+
 					WaitForSingleObject(hMutexMailslot, INFINITE);
-					produzAlarme(alarmeCLP, mensagem.nSeq,mensagem.id);
 					bStatus = WriteFile(hMailslot, &alarmeCLP, sizeof(almType), &dwBytesEnviados, NULL);
 					ReleaseMutex(hMutexMailslot);
 				}
@@ -403,12 +437,13 @@ DWORD WINAPI RetiraMensagem() {
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Tarefa de retirada de mensagens foi desbloqueada \n");
 				ListaCheiaNotificada = FALSE;
 				estadoRetiraMensagem = DESBLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 		}
 
@@ -420,7 +455,7 @@ DWORD WINAPI RetiraMensagem() {
 DWORD WINAPI MonitoraAlarme() {
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
-	HANDLE hEventoMonitoraAlarme[3] = { event_M, event_ESC, hMutexNSEQ };
+	HANDLE hEventoMonitoraAlarme[3] = { event_M, event_ESC, hMutexNSEQAlarme };
 	HANDLE hEventoTimer[3] = { event_M, event_ESC, hTimerCLP[2]};
 	LARGE_INTEGER Preset;
 
@@ -437,11 +472,12 @@ DWORD WINAPI MonitoraAlarme() {
 			nTipoEvento = ret - WAIT_OBJECT_0;
 
 			if (nTipoEvento == 0) {			// Bloqueio
-				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
 				estadoMonitoraAlarme = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Encerramento
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {	// Timer
 				//Seta um novo tempo aleatorio
@@ -459,18 +495,21 @@ DWORD WINAPI MonitoraAlarme() {
 			
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Bloqueio
-				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi bloqueada \n");
 				estadoMonitoraAlarme = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Encerramento
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {	// Mutex
-				NSEQ_aux = NSEQ;
-				if (NSEQ != 99999) NSEQ++;
-				else NSEQ = 0;
-				ReleaseMutex(hMutexNSEQ);
+				NSEQ_aux = NSEQAlarme;
+				if (NSEQAlarme != 99999) NSEQAlarme++;
+				else NSEQAlarme = 0;
+				ReleaseMutex(hMutexNSEQAlarme);
+
 				produzAlarme(alarme, NSEQ_aux);
+
 				WaitForSingleObject(hMutexMailslot, INFINITE);
 				bStatus = WriteFile(hMailslot, &alarme, sizeof(almType), &dwBytesEnviados, NULL);
 				ReleaseMutex(hMutexMailslot);
@@ -481,11 +520,12 @@ DWORD WINAPI MonitoraAlarme() {
 			CheckForError(ret);
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Tarefa de leitura do CLP de monitoracao dos alarmes criticos foi desbloqueada \n");
 				estadoMonitoraAlarme = DESBLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 		}
 	} while (nTipoEvento != 1);
@@ -506,21 +546,22 @@ DWORD WINAPI ExibeDadosProcesso() {
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Recebeu comando de bloqueio
-				printf("Tarefa de exibicao dos dados do processo bloqueada \n");
 				estadoExibeDados = BLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {	// Recebeu comando de encerramento
 				printf("Tecla ESC digitada, encerrando o programa... \n");
+				continue;
 			}
 			else if (nTipoEvento == 2) {	// Existem mensagens a serem lidas na lista 2
 				mensagem = lista2[pOcupado2]; // Le a mensagem
 
 				std::cout << getTIME(mensagem.timestamp) <<
-					" NSEQ: " << setw(5) << setfill('0') << mensagem.nSeq <<
-					" ID: " << mensagem.id <<
-					" PR INT: " << mensagem.presInt <<
-					" PR N2: " << mensagem.presInj <<
-					" TEMP: " << mensagem.temp << endl;
+					" NSEQ: "	<< setw(5) << setfill('0') << mensagem.nSeq <<
+					" ID: "		<< mensagem.id <<
+					" PR INT: " << setw(6) << setfill('0') << std::fixed << setprecision(1) << mensagem.presInt <<
+					" PR N2: "	<< setw(6) << setfill('0') << std::fixed << setprecision(1) << mensagem.presInj <<
+					" TEMP: "	<< setw(6) << setfill('0') << std::fixed << setprecision(1) << mensagem.temp << endl;
 				pOcupado2 = (pOcupado2 + 1) % 50;
 				ReleaseSemaphore(hLista2Livre, 1, NULL);	// Sinaliza que liberou um espaco na lista 2
 			}
@@ -531,11 +572,12 @@ DWORD WINAPI ExibeDadosProcesso() {
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
-				printf("Tarefa de exibicao dos dados do processo desbloqueada \n");
-				estadoExibeDados = DESBLOQUEADO; continue;
+				estadoExibeDados = DESBLOQUEADO;
+				continue;
 			}
 			else if (nTipoEvento == 1) {
-				printf("Tecla ESC digitada, encerrando o programa... \n"); break;
+				printf("Tecla ESC digitada, encerrando o programa... \n"); 
+				continue;
 			}
 		}
 

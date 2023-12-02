@@ -5,7 +5,7 @@
 #include <conio.h>		// _getch
 #include <string>
 #include <process.h>	// _beginthreadex() e _endthreadex()
-#include "CheckForError.h"
+#include "../CheckForError.h"
 
 // Teclas a serem digitadas
 #define	ESC			0x1B
@@ -269,20 +269,23 @@ DWORD WINAPI LeituraTeclado() {
 DWORD WINAPI MonitoraListas() {
 
 	//Pra quando tiver o evento de lista cheia (1 ou 2)
-	HANDLE eventos[3] = { event_ESC, event_lista1};
+	HANDLE eventos[3] = { event_ESC, event_lista1, event_lista2};
 	int nTipoEvento;
 	DWORD ret;
 	do {
 		ret = WaitForMultipleObjects(
-			2,					// Espera 2 eventos 
+			3,					// Espera 3 eventos 
 			eventos,			// Array de eventos que espera
 			FALSE,				// Espera o que acontecer primeiro
 			INFINITE			// Espera por tempo indefinido
 		);
 		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 		nTipoEvento = ret - WAIT_OBJECT_0;
-
-		if (nTipoEvento == 1) {
+		
+		if (nTipoEvento == 2) {
+			printf("Lista 2 cheia \n");
+		}
+		else if (nTipoEvento == 1) {
 			printf("Lista 1 cheia \n");
 		}
 		else if (nTipoEvento == 0) {
