@@ -158,7 +158,7 @@ DWORD WINAPI MonitoraEvento() {
 		);
 		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 		nTipoEvento = ret - WAIT_OBJECT_0;
-		cout<<nTipoEvento<<endl;
+		
 		if (nTipoEvento == 1) {
 			if (estadoExibirAlarme == BLOQUEADO) estadoExibirAlarme = DESBLOQUEADO;
 			else  estadoExibirAlarme = BLOQUEADO; 

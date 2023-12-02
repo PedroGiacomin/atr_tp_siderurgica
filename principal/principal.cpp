@@ -192,7 +192,7 @@ int main() {
 	// Aguarda termino das threads
 	dwRet = WaitForMultipleObjects(2, hThreads, TRUE, INFINITE);
 	if (dwRet != WAIT_OBJECT_0)
-		printf("Erro na criacao da thread MonitoraListas! Codigo = %d\n", GetLastError());
+		printf("Erro no fechamento das threads! Codigo = %d\n", GetLastError());
 
 	// Fecha handle de eventos de bloqueio
 	for (int i = 0; i < NUM_EVENTOS; ++i) {
@@ -216,7 +216,6 @@ int main() {
 	if (!status)
 		printf("Erro no fechamento do handle do evento mailslotCriado! Codigo = %d\n", GetLastError());
 	
-
 	return EXIT_SUCCESS;
 }
 
@@ -226,7 +225,7 @@ DWORD WINAPI LeituraTeclado() {
 
 	// Espera uma tecla ser digitada ate ESC
 	do {
-		printf("Aguardando comando\n");	//pode tirar isso depois
+		//printf("Aguardando comando\n");	
 		nTecla = _getch();	// Isso aqui vai dar errado pra quando a lista estiver cheia
 
 		switch (nTecla) {
@@ -305,16 +304,16 @@ void printEstadoThread(int numEvento) {
 		printf("Tarefa de Leitura do CLP2 ");
 		break;
 	case 2:
-		printf("Tarefa de Monitoracao dos Alarmes Críticos foi ");
+		printf("Tarefa de Monitoracao dos Alarmes Criticos ");
 		break;
 	case 3:
-		printf("Tarefa de Retirada de Mensagens foi ");
+		printf("Tarefa de Retirada de Mensagens ");
 		break;
 	case 4:
-		printf("Tarefa de Exibir Dados do Processo foi ");
+		printf("Tarefa de Exibir Dados do Processo ");
 		break;
 	case 5:
-		printf("Tarefa de Exibir Alarmes foi ");
+		printf("Tarefa de Exibir Alarmes ");
 		break;
 	}
 	if (estadosThreads[numEvento] == TRUE) {
