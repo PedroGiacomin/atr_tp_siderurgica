@@ -1,4 +1,3 @@
-/*	A principio tem apenas a thread primaria, pois so precisa aguardar os eventos de bloqueio e ESC */
 #include "../bibliotecaTp.h"
 #include <iostream>
 #include <iomanip>
@@ -6,7 +5,7 @@
 #include <process.h>
 #include <conio.h>
 #include "../CheckForError.h"
-
+#define _CHECKERROR	1	// Ativa fun��o CheckForError
 
 HANDLE event_A;
 HANDLE event_ESC;
@@ -84,7 +83,7 @@ int main() {
 
 	// Aguarda t?rmino das threads
 	dwRet = WaitForMultipleObjects(2, hThreads, TRUE, INFINITE);
-	CheckForError(dwRet == WAIT_OBJECT_0);
+	CheckForError((dwRet >= WAIT_OBJECT_0) && (dwRet < WAIT_OBJECT_0 + 2));
 
 	// Fecha todos os handles de objetos do kernel
 	for (int i = 0; i < 2; ++i)

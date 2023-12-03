@@ -191,6 +191,7 @@ int main() {
 
 	// Aguarda termino das threads
 	dwRet = WaitForMultipleObjects(2, hThreads, TRUE, INFINITE);
+	CheckForError((dwRet >= WAIT_OBJECT_0) && (dwRet < WAIT_OBJECT_0 + 2));
 	if (dwRet != WAIT_OBJECT_0)
 		printf("Erro no fechamento das threads! Codigo = %d\n", GetLastError());
 
@@ -210,6 +211,11 @@ int main() {
 	status = CloseHandle(event_lista1);
 	if (!status)
 		printf("Erro no fechamento do handle do evento de lista1! Codigo = %d\n", GetLastError());
+	
+	// Fecha handle do evento lista2
+	status = CloseHandle(event_lista2);
+	if (!status)
+		printf("Erro no fechamento do handle do evento de lista2! Codigo = %d\n", GetLastError());
 
 	// Fecha handle do evento mailslotCriado
 	status = CloseHandle(event_mailslotCriado);
@@ -279,7 +285,7 @@ DWORD WINAPI MonitoraListas() {
 			FALSE,				// Espera o que acontecer primeiro
 			INFINITE			// Espera por tempo indefinido
 		);
-		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
+		CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		
 		if (nTipoEvento == 2) {

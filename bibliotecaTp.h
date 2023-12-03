@@ -45,10 +45,7 @@ int setDIAG() {
 		printf("rand_s falhou em setDIAG()\n");
 
 	int resultado = rand_num % 70;
-	// if (resultado >= 55)
-	// 	return 55;
-	// else
-		return resultado;
+	return resultado;
 }
 
 
@@ -136,7 +133,7 @@ int randTime1a5s(){
 }
 
 // Retorna a descrição do alarme de acordo com seu ID
-// 0 nao e usado
+// O ID 0 nao e usado
 // 1 e 2 sao reservados para falha de hardware
 // 3 a 12 sao alarmes de processo
 void printMensagemAlarme(int id) {

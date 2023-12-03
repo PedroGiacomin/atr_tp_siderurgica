@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN 
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
 #define _CRT_RAND_S
+#define _CHECKERROR	1	// Ativa fun��o CheckForError
 
 #include <windows.h>
 #include <stdio.h>
@@ -13,6 +14,7 @@
 #include <sstream>
 #include <iomanip>
 #include "../bibliotecaTp.h"
+
 
 using namespace std;
 
@@ -43,7 +45,6 @@ HANDLE hLista2Livre;
 HANDLE hLista1Ocup;
 HANDLE hLista2Ocup;
 HANDLE hMutexNSEQ;
-HANDLE hMutexNSEQAlarme;
 HANDLE hMutexpLivre1;
 HANDLE hMutexMailslot;
 HANDLE hMutexListaCheia;
@@ -82,7 +83,6 @@ int main()
 	hLista1Ocup = CreateSemaphore(NULL, 0, 100, L"Lista1Ocup");
 	hLista2Ocup = CreateSemaphore(NULL, 0, 50, L"Lista2Ocup");
 	hMutexNSEQ = CreateMutex(NULL, FALSE, NULL);
-	hMutexNSEQAlarme = CreateMutex(NULL, FALSE, NULL);
 	hMutexpLivre1 = CreateMutex(NULL, FALSE, NULL);
 	hMutexMailslot = CreateMutex(NULL, FALSE, NULL);
 	hMutexListaCheia = CreateMutex(NULL, FALSE, NULL);
@@ -207,14 +207,13 @@ int main()
 	// ------- ENCERRAMENTO DA APLICACAO -------//
 	// Aguarda t�rmino das threads
 	dwRet = WaitForMultipleObjects(5, hThreads, TRUE, INFINITE);
-	CheckForError(dwRet == WAIT_OBJECT_0);
+	CheckForError((dwRet >= WAIT_OBJECT_0) && (dwRet < WAIT_OBJECT_0 + 5));
 
-	// Fecha todos os handles de objetos do kernel
+	// Fecha todos os handles das threads
 	for (int i = 0; i < 5; ++i)
 		CloseHandle(hThreads[i]);
 	
-	
-	// Fecha os handles dos objetos de sincroniza��o
+	// Fecha os handles dos mutexes e semaforos
 	CloseHandle(hMutexNSEQ);
 	CloseHandle(hMutexMailslot);
 	CloseHandle(hMutexListaCheia);
@@ -232,10 +231,15 @@ int main()
 	CloseHandle(event_1);
 	CloseHandle(event_2);
 	CloseHandle(event_lista1);	
+	CloseHandle(event_lista2);
 	CloseHandle(event_mailslotCriado);
 
 	// Fecha o handle para o mailslot
 	CloseHandle(hMailslot);
+
+	//Fecha o handle dos temporizadores
+	for (int i = 0; i < 3; ++i)
+		CloseHandle(hTimerCLP[i]);
 
 	return EXIT_SUCCESS;
 }	// main
@@ -265,7 +269,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 		if (estadoLeitura == DESBLOQUEADO) {
 			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo timer
 			ret = WaitForMultipleObjects(3, hEventoTimer, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			
 			if (nTipoEvento == 0) {			// Bloqueio
@@ -277,56 +281,9 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				continue;
 			}
 			else if (nTipoEvento == 2) {	// Timer
-				// Continua a execucao do programa
-			}
-
-			//// Espera a sua vez para usar NSEQ na cria��o da mensagem 	
-			ret = WaitForMultipleObjects(3, hEventoMutexNSEQ, FALSE, INFINITE);
-			CheckForError(ret);
-			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-				estadoLeitura = BLOQUEADO;
-				continue;
-			}
-			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
-				printf("Tecla ESC digitada, encerrando o programa... \n");
-				continue;
-			}
-			else if (nTipoEvento == 2) {   // Mutex para acessar a varivael NSEQ est� dispon�vel
-				NSEQ_aux = NSEQ;
-				if (NSEQ != 99999) NSEQ++;
-				else NSEQ = 0;
-				ReleaseMutex(hMutexNSEQ);
-			}
-
-			// Uma vez concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
-			produzMensagem(mensagem, i + 1, NSEQ_aux);
-
-			// Verifica se existem posi��es livres na lista1, esperando pelo tempo maximo de 10 ms
-			ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, 10);
-			CheckForError(ret);
-			if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida ent�o a lista esta cheia 
-				WaitForSingleObject(hMutexListaCheia, INFINITE);
-				if ( ListaCheiaNotificada == FALSE) {
-					printf("Meu ID %d %d\n", i, ListaCheiaNotificada);
-					ListaCheiaNotificada = TRUE;
-					SetEvent(event_lista1); // Informa ao processo de leitura do teclado que a lista1 est� cheia
-				}
-				ReleaseMutex(hMutexListaCheia);
-				ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, INFINITE); // A thread fica bloqueada 
-			}
-			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-				estadoLeitura = BLOQUEADO;
-				continue;
-			}
-			else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
-				printf("Tecla ESC digitada, encerrando o programa... \n");
-				continue;
-			}
-			else if (nTipoEvento == 2) {	// Existe uma posi�ao livre na lista 1
-				ret = WaitForMultipleObjects(3, hEventoMutexpLivre1, FALSE, INFINITE);
-				CheckForError(ret);
+				// Espera a sua vez para usar NSEQ na cria��o da mensagem 	
+				ret = WaitForMultipleObjects(3, hEventoMutexNSEQ, FALSE, INFINITE);
+				CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 				nTipoEvento = ret - WAIT_OBJECT_0;
 				if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
 					estadoLeitura = BLOQUEADO;
@@ -336,11 +293,57 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 					printf("Tecla ESC digitada, encerrando o programa... \n");
 					continue;
 				}
-				else if (nTipoEvento == 2) {    // A variavel pLivre1 pode ser acessada 
-					lista1[pLivre1] = mensagem;			// A mensagem � colocada na lista na posi��o livre
-					pLivre1 = (pLivre1 + 1) % 100;
-					ReleaseMutex(hMutexpLivre1);				// Libera o mutex da variavel pLivre1
-					ReleaseSemaphore(hLista1Ocup, 1, NULL);		// Indica que existe mensagem a ser lida
+				else if (nTipoEvento == 2) {   // Mutex para acessar a varivael NSEQ est� dispon�vel
+					NSEQ_aux = NSEQ;
+					if (NSEQ != 99999) NSEQ++;
+					else NSEQ = 0;
+					ReleaseMutex(hMutexNSEQ);
+				}
+
+				// Uma vez concluida a secao critica de acesso ao NSEQ: libera mutex e produz mensagem
+				produzMensagem(mensagem, i + 1, NSEQ_aux);
+
+				// Verifica se existem posi��es livres na lista1, esperando pelo tempo maximo de 10 ms
+				ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, 10);
+				CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+				if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida ent�o a lista esta cheia 
+					WaitForSingleObject(hMutexListaCheia, INFINITE);
+					if (ListaCheiaNotificada == FALSE) {
+						printf("Meu ID %d %d\n", i, ListaCheiaNotificada);
+						ListaCheiaNotificada = TRUE;
+						SetEvent(event_lista1); // Informa ao processo de leitura do teclado que a lista1 est� cheia
+					}
+					ReleaseMutex(hMutexListaCheia);
+					ret = WaitForMultipleObjects(3, hEventoLista1Livre, FALSE, INFINITE); // A thread fica bloqueada 
+					CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+				}
+				nTipoEvento = ret - WAIT_OBJECT_0;
+				if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
+					estadoLeitura = BLOQUEADO;
+					continue;
+				}
+				else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+					printf("Tecla ESC digitada, encerrando o programa... \n");
+					continue;
+				}
+				else if (nTipoEvento == 2) {	// Existe uma posi�ao livre na lista 1
+					ret = WaitForMultipleObjects(3, hEventoMutexpLivre1, FALSE, INFINITE);
+					CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+					nTipoEvento = ret - WAIT_OBJECT_0;
+					if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
+						estadoLeitura = BLOQUEADO;
+						continue;
+					}
+					else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+						printf("Tecla ESC digitada, encerrando o programa... \n");
+						continue;
+					}
+					else if (nTipoEvento == 2) {    // A variavel pLivre1 pode ser acessada 
+						lista1[pLivre1] = mensagem;			// A mensagem � colocada na lista na posi��o livre
+						pLivre1 = (pLivre1 + 1) % 100;
+						ReleaseMutex(hMutexpLivre1);				// Libera o mutex da variavel pLivre1
+						ReleaseSemaphore(hLista1Ocup, 1, NULL);		// Indica que existe mensagem a ser lida
+					}
 				}
 			}
 		}
@@ -348,7 +351,7 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 		else { 
 			// Se a thread estiver bloqueada ela deve esperar pelo comando de desbloqueio ou pelo encerramento
 			ret = WaitForMultipleObjects(2, hEventoCLPBloqueado, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				estadoLeitura = DESBLOQUEADO;
@@ -379,7 +382,7 @@ DWORD WINAPI RetiraMensagem() {
 	do {
 		if (estadoRetiraMensagem == DESBLOQUEADO) {
 			ret = WaitForMultipleObjects(3, hEventoLista1Ocup, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
@@ -393,40 +396,35 @@ DWORD WINAPI RetiraMensagem() {
 			else if (nTipoEvento == 2) {		// Existem mensagens a serem lidas da lista1 
 				mensagem = lista1[pOcupado1];	// Le mensagem da lista 1
 
-				// Verifica se existem posicoes livres na lista2, esperando pelo tempo maximo de 10 ms
-				ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, 10);
-				CheckForError(ret);
-				if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedido entao a lista 2 esta cheia 
-					SetEvent(event_lista2); 
-					ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, INFINITE); // A thread fica bloqueada 
-				}
-				nTipoEvento = ret - WAIT_OBJECT_0;
-				if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
-					estadoRetiraMensagem = BLOQUEADO;
-					continue;
-				}
-				else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
-					printf("Tecla ESC digitada, encerrando o programa... \n");
-					continue;
-				}
-				else if (nTipoEvento == 2) {	// Existe uma posicao livre na lista 2
-					lista2[pLivre2] = mensagem;						// Escreve mensagem na lista 2
-					pLivre2 = (pLivre2 + 1) % 50;
-					ReleaseSemaphore(hLista2Ocup, 1, NULL);			// Sinaliza que tem mensagens a serem lidas na lista 2
-				}
-
 				if (mensagem.diag == 55) {  // Deve produzir um alarme indicando falha de hardware no CLP 
-					WaitForSingleObject(hMutexNSEQAlarme, INFINITE);
-					NSEQ_aux = NSEQAlarme;
-					if (NSEQAlarme != 99999) NSEQAlarme++;
-					else NSEQAlarme = 0;
-					ReleaseMutex(hMutexNSEQAlarme);
-					
-					produzAlarme(alarmeCLP, NSEQ_aux, mensagem.id);
-
+					produzAlarme(alarmeCLP, mensagem.nSeq, mensagem.id);
 					WaitForSingleObject(hMutexMailslot, INFINITE);
 					bStatus = WriteFile(hMailslot, &alarmeCLP, sizeof(almType), &dwBytesEnviados, NULL);
 					ReleaseMutex(hMutexMailslot);
+				}
+				else { // Diag !=55, a mensagem deve ser depositada na segunda lista 
+					// Verifica se existem posicoes livres na lista2, esperando pelo tempo maximo de 10 ms
+					ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, 10);
+					CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+					if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedido entao a lista 2 esta cheia 
+						SetEvent(event_lista2);
+						ret = WaitForMultipleObjects(3, hEventoLista2Livre, FALSE, INFINITE); // A thread fica bloqueada 
+						CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
+					}
+					nTipoEvento = ret - WAIT_OBJECT_0;
+					if (nTipoEvento == 0) {			// Ocorreu um comando para bloquear a thread
+						estadoRetiraMensagem = BLOQUEADO;
+						continue;
+					}
+					else if (nTipoEvento == 1) {	// Ocorreu um comando para encerrar o programa
+						printf("Tecla ESC digitada, encerrando o programa... \n");
+						continue;
+					}
+					else if (nTipoEvento == 2) {	// Existe uma posicao livre na lista 2
+						lista2[pLivre2] = mensagem;						// Escreve mensagem na lista 2
+						pLivre2 = (pLivre2 + 1) % 50;
+						ReleaseSemaphore(hLista2Ocup, 1, NULL);			// Sinaliza que tem mensagens a serem lidas na lista 2
+					}
 				}
 				pOcupado1 = (pOcupado1 + 1) % 100;
 				ReleaseSemaphore(hLista1Livre, 1, NULL);
@@ -434,7 +432,7 @@ DWORD WINAPI RetiraMensagem() {
 		}
 		else {
 			ret = WaitForMultipleObjects(2, hEventoRetiraMensagemBloqueada, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				ListaCheiaNotificada = FALSE;
@@ -455,7 +453,7 @@ DWORD WINAPI RetiraMensagem() {
 DWORD WINAPI MonitoraAlarme() {
 	estado estadoMonitoraAlarme = DESBLOQUEADO;
 	DWORD nTipoEvento, ret;
-	HANDLE hEventoMonitoraAlarme[3] = { event_M, event_ESC, hMutexNSEQAlarme };
+	HANDLE hEventoMonitoraAlarme[2] = { event_M, event_ESC};
 	HANDLE hEventoTimer[3] = { event_M, event_ESC, hTimerCLP[2]};
 	LARGE_INTEGER Preset;
 
@@ -468,7 +466,7 @@ DWORD WINAPI MonitoraAlarme() {
 		if (estadoMonitoraAlarme == DESBLOQUEADO) {
 			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo timer
 			ret = WaitForMultipleObjects(3, hEventoTimer, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 
 			if (nTipoEvento == 0) {			// Bloqueio
@@ -479,7 +477,16 @@ DWORD WINAPI MonitoraAlarme() {
 				printf("Tecla ESC digitada, encerrando o programa... \n");
 				continue;
 			}
-			else if (nTipoEvento == 2) {	// Timer
+			else if (nTipoEvento == 2) {	// Timer ( Thread deve ser executada ) 
+				// Define o número sequencial do alarme a ser produzido
+				NSEQ_aux = NSEQAlarme;
+				if (NSEQAlarme != 99999) NSEQAlarme++;
+				else NSEQAlarme = 0;
+				// Produz o alarme e envia por meio do mailslot
+				produzAlarme(alarme, NSEQ_aux);
+				WaitForSingleObject(hMutexMailslot, INFINITE);
+				bStatus = WriteFile(hMailslot, &alarme, sizeof(almType), &dwBytesEnviados, NULL);
+				ReleaseMutex(hMutexMailslot);
 				//Seta um novo tempo aleatorio
 				bStatus = CancelWaitableTimer(hTimerCLP[2]);
 				CheckForError(bStatus);
@@ -489,35 +496,10 @@ DWORD WINAPI MonitoraAlarme() {
 				CheckForError(bStatus);
 			}
 
-			// Espera pelo o encerramento do programa, pelo bloqueio, ou pelo mutex do NSEQ
-			ret = WaitForMultipleObjects(3, hEventoMonitoraAlarme, FALSE, INFINITE);
-			CheckForError(ret);
-			
-			nTipoEvento = ret - WAIT_OBJECT_0;
-			if (nTipoEvento == 0) {			// Bloqueio
-				estadoMonitoraAlarme = BLOQUEADO;
-				continue;
-			}
-			else if (nTipoEvento == 1) {	// Encerramento
-				printf("Tecla ESC digitada, encerrando o programa... \n");
-				continue;
-			}
-			else if (nTipoEvento == 2) {	// Mutex
-				NSEQ_aux = NSEQAlarme;
-				if (NSEQAlarme != 99999) NSEQAlarme++;
-				else NSEQAlarme = 0;
-				ReleaseMutex(hMutexNSEQAlarme);
-
-				produzAlarme(alarme, NSEQ_aux);
-
-				WaitForSingleObject(hMutexMailslot, INFINITE);
-				bStatus = WriteFile(hMailslot, &alarme, sizeof(almType), &dwBytesEnviados, NULL);
-				ReleaseMutex(hMutexMailslot);
-			}
 		}
 		else {
 			ret = WaitForMultipleObjects(2, hEventoMonitoraAlarme, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
 				estadoMonitoraAlarme = DESBLOQUEADO;
@@ -542,7 +524,7 @@ DWORD WINAPI ExibeDadosProcesso() {
 	do {
 		if (estadoExibeDados == DESBLOQUEADO) {
 			ret = WaitForMultipleObjects(3, hEventoLista2Ocup, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 3));
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {			// Recebeu comando de bloqueio
@@ -568,7 +550,7 @@ DWORD WINAPI ExibeDadosProcesso() {
 		}
 		else {
 			ret = WaitForMultipleObjects(2, hEventoExibeDadosBloqueado, FALSE, INFINITE);
-			CheckForError(ret);
+			CheckForError((ret >= WAIT_OBJECT_0) && (ret < WAIT_OBJECT_0 + 2));
 
 			nTipoEvento = ret - WAIT_OBJECT_0;
 			if (nTipoEvento == 0) {
