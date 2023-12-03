@@ -16,6 +16,7 @@
 #define TECLA_P		0x70
 #define TECLA_A		0x61
 #define NUM_EVENTOS 6
+#define _CHECKERROR	1	// Ativa fun??o CheckForError
 
 // Handles para os eventos
 HANDLE events[6];
@@ -230,6 +231,7 @@ DWORD WINAPI LeituraTeclado() {
 	int nTecla;		//tecla digitada
 
 	// Espera uma tecla ser digitada ate ESC
+	printf("Aguardando comando\n\n");
 	do {
 		//printf("Aguardando comando\n");	
 		nTecla = _getch();	// Isso aqui vai dar errado pra quando a lista estiver cheia

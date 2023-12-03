@@ -5,7 +5,7 @@
 #include <process.h>
 #include <conio.h>
 #include "../CheckForError.h"
-//#define _CHECKERROR	1	// Ativa fun��o CheckForError
+#define _CHECKERROR	1	// Ativa fun��o CheckForError
 
 HANDLE event_A;
 HANDLE event_ESC;
