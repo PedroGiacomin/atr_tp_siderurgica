@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN 
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
 #define _CRT_RAND_S
-#define _CHECKERROR	1	// Ativa fun��o CheckForError
+
 
 #include <windows.h>
 #include <stdio.h>
@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iomanip>
 #include "../bibliotecaTp.h"
+#define _CHECKERROR	1	// Ativa fun��o CheckForError
 
 
 using namespace std;
@@ -144,7 +145,8 @@ int main()
 	CheckForError(bSucesso);
 
 	int timeCLP3 = randTime1a5s();	// Calcula tempo aleatorio
-	bSucesso = SetWaitableTimer(hTimerCLP[2], &Preset, timeCLP3, NULL, NULL, FALSE);
+	Preset.QuadPart = timeCLP3;
+	bSucesso = SetWaitableTimer(hTimerCLP[2], &Preset, 0, NULL, NULL, FALSE);
 	CheckForError(bSucesso);
 
 	// ------- CRIACAO DAS THREADS -------//
@@ -309,7 +311,6 @@ DWORD WINAPI LeituraCLP(LPVOID index)
 				if (ret == WAIT_TIMEOUT) { // Caso o tempo for excedida ent�o a lista esta cheia 
 					WaitForSingleObject(hMutexListaCheia, INFINITE);
 					if (ListaCheiaNotificada == FALSE) {
-						printf("Meu ID %d %d\n", i, ListaCheiaNotificada);
 						ListaCheiaNotificada = TRUE;
 						SetEvent(event_lista1); // Informa ao processo de leitura do teclado que a lista1 est� cheia
 					}

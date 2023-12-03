@@ -1,5 +1,5 @@
 #define _CRT_RAND_S
-#include<Windows.h>
+#include <Windows.h>
 #include <string.h>
 #include <iostream>
 #include <sstream>
