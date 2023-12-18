@@ -1,0 +1,9 @@
+﻿  exibirAlarme.cpp
+C:\Users\Pedro Giacomin\Documents\Aa-ATR_TP\bibliotecaTp.h(59,12): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Users\Pedro Giacomin\Documents\Aa-ATR_TP\bibliotecaTp.h(71,12): warning C4244: 'inicializando': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Pedro Giacomin\Documents\Aa-ATR_TP\bibliotecaTp.h(131,15): warning C4244: 'inicializando': conversão de 'double' para 'int', possível perda de dados
+  Gerando código
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+  All 67 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finalizada a geração de código
+  exibirAlarmes.vcxproj -> C:\Users\Pedro Giacomin\Documents\Aa-ATR_TP\Release\exibirAlarmes.exe

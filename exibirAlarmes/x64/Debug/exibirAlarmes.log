@@ -1,0 +1,9 @@
+﻿  exibirAlarme.cpp
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(67,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [85]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(67,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(67,4): message : ao tentar corresponder a lista de argumentos '(const char [85], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(90,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [85]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(90,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\exibirAlarmes\exibirAlarme.cpp(90,4): message : ao tentar corresponder a lista de argumentos '(const char [85], long)'

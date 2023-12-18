@@ -1,0 +1,5 @@
+﻿  principal.cpp
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\principal\principal.cpp(236,3): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [78]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\principal\principal.cpp(236,3): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\principal\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\principal\principal.cpp(236,3): message : ao tentar corresponder a lista de argumentos '(const char [78], long)'

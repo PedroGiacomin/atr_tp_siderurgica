@@ -1,0 +1,40 @@
+﻿  mensagensCLP.cpp
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(133,4): warning C4312: 'conversão de tipo': conversão de 'int' para 'LPVOID' de tamanho maior
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(193,2): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(193,2): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(193,2): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(212,10): warning C4311: 'conversão de tipo': truncamento de ponteiro de 'LPVOID' para 'int'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(212,10): warning C4302: 'conversão de tipo': truncamento de 'LPVOID' para 'int'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(232,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(232,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(232,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(243,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(243,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(243,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(268,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(268,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(268,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(292,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(292,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(292,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(316,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(316,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(316,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(342,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(342,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(342,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(364,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(364,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(364,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(403,4): error C2664: 'void CheckReturn(LPSTR,int)': não é possível converter um argumento 1 de 'const char [84]' em 'LPSTR'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(403,4): message : A conversão da cadeia de caracteres literal perde o qualificador const (consulte /Zc:strictStrings)
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\CheckForError.h(15,15): message : consulte a declaração de 'CheckReturn'
+C:\Users\Pedro Giacomin\Documents\ATR_TP_V3\ATR_TP_V3\mensagensCLP\mensagensCLP.cpp(403,4): message : ao tentar corresponder a lista de argumentos '(const char [84], long)'
